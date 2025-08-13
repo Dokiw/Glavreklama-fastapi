@@ -51,7 +51,7 @@ class Token(BaseModel):
     refresh_token: Optional[str] = None
     expires_in: Optional[int] = None  # seconds
 class AuthResponse(BaseModel):
-    username: OutUser
+    user_data: OutUser = Field(..., alias="userData")
     token: Token = Field(...,alias="tokenUser")
 
     class Config:
