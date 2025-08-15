@@ -1,15 +1,12 @@
-from app.db.session import *
-from app.handlers.auth.schemas import OutUser, UserCreate
-from app.models.auth import *
+from app.handlers.auth.dto import UserAuthData
+from app.handlers.auth.schemas import OutUser, UserCreate, RoleUser
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.handlers.auth.interfaces import AsyncUserRepository
-
-
 from sqlalchemy import select
 
 from typing import TYPE_CHECKING, Optional, List
 if TYPE_CHECKING:
-    from app.models.auth.models import User as UserModel
+    from app.models.auth.models import User as UserModel, Role as RoleModel
 
 class UserRepository(AsyncUserRepository):
     def __init__(self, db: AsyncSession):
@@ -50,5 +47,33 @@ class UserRepository(AsyncUserRepository):
         result = await self.db.execute(q)
         user = result.scalar_one_or_none()
         return self._to_dto(user) if user else None
+
+    async def get_auth_data(self,user_name: str) -> Optional[UserAuthData]:
+        q = select(UserModel).where(UserModel.user_name == user_name)
+        result = await self.db.execute(q)
+        user = result.scalar_one_or_none()
+        return UserAuthData(
+            id = user.id,
+            pass_hash = user.pass_hash,
+            user_name = user.user_name,
+            email = user.email,
+            last_name = user.last_name,
+            first_name=user.first_name,
+        ) if user else None
+
+class RoleRepository(AsyncUserRepository):
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def get_by_id(self,role_id: int) -> Optional[RoleUser]:
+        q = select(RoleModel).where(RoleModel.id == role_id).limit(1)
+        result = await self.db.execute(q)
+        role = result.scalar_one_or_none()
+        return RoleUser(name=role.name,description=role.description)
+    async def get_by_user_id(self,id_user: int) -> Optional[RoleUser]:
+        q = select(RoleModel).join(UserModel, RoleUser.id == UserModel.role_id).where(UserModel.id == id_user).limit(1)
+        result = await self.db.execute(q)
+        role = result.scalar_one_or_none()
+        return RoleUser(name=role.name,description=role.description)
 
 
