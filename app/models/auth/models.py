@@ -45,15 +45,15 @@ class User(Base):
     sessions: Mapped[List["Session"]] = relationship("Session", back_populates="user", cascade="all, delete-orphan")
 
     @property
-    async def password(self) -> None:
+    def password(self) -> None:
         raise AttributeError("Password is write-only")
 
     @password.setter
-    async def password(self, plaintext: str) -> None:
+    def password(self, plaintext: str) -> None:
         """Хэшируем пароль при установке через property."""
         self.pass_hash = bcrypt.hash(plaintext)
 
-    async def verify_password(self, plaintext: str) -> bool:
+    def verify_password(self, plaintext: str) -> bool:
         return bcrypt.verify(plaintext, self.pass_hash)
 
     async def to_dict(self) -> dict:
@@ -76,4 +76,4 @@ class Role(Base):
     name: Mapped[str] = mapped_column(String(100),unique=True)
     description: Mapped[str | None] = mapped_column(Text,nullable=True)
 
-    users: Mapped[List["User"]] = relationship("User", back_populates="roles")
+    users: Mapped[List["User"]] = relationship("User", back_populates="role")

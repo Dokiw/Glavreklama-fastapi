@@ -1,7 +1,7 @@
 from fastapi import APIRouter,HTTPException
 
-route = APIRouter()
+router = APIRouter()
 
-@route.get("/")
+@router.get("/")
 async def hub():
     return HTTPException(200,'Status - True')

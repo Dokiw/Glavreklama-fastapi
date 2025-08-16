@@ -1,14 +1,17 @@
 from typing import Optional
 
-from fastapi import HTTPException,status
-
+from fastapi import HTTPException, status, Depends
+from sqlalchemy.exc import IntegrityError
+import asyncpg
 from app.handlers.auth.dto import UserAuthData
 from app.handlers.auth.interfaces import AsyncAuthService, AsyncUserRepository, AsyncRoleRepository
 from app.handlers.auth.schemas import LogInUser, RoleUser, AuthResponse, OutUser, Token, UserCreate
 
-
 class SqlAlchemyAuth(AsyncAuthService):
-    def __init__(self, user_repo: AsyncUserRepository,role_repo: AsyncRoleRepository):
+    def __init__(
+            self, user_repo: AsyncUserRepository,
+            role_repo: AsyncRoleRepository
+    ):
         self.user_repo = user_repo
         self.role_repo = role_repo
 
@@ -26,7 +29,7 @@ class SqlAlchemyAuth(AsyncAuthService):
         #выкидываем если нету пользователя и данных
         if not auth or not auth.verify_password(login_data.password):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-        #Нужно подключить интерфейс для работы выдачи токена и сверки
+        #todo Нужно подключить интерфейс для работы выдачи токена и сверки
 
         # Формируем OutUser напрямую из auth (полей dataclass)
         out = OutUser(
@@ -47,11 +50,26 @@ class SqlAlchemyAuth(AsyncAuthService):
         #todo - Необходимо доделать сессионность и закрытие сессии
         return None
 
-    async def register(self,user_data: UserCreate) -> Optional[OutUser]:
-        user: Optional[OutUser] = await self.user_repo.create_user(user_data)
-        if not user:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid date")
-        return OutUser.from_orm(user)
+    async def register(self,user_data: UserCreate) -> Optional[AuthResponse]:
+        try:
+            user: Optional[OutUser] = await self.user_repo.create_user(user_data)
+        except IntegrityError as e:
+            if isinstance(e.orig, asyncpg.exceptions.UniqueViolationError):
+                if "users_email_key" in str(e.orig):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Пользователь с email {user_data.email} уже существует"
+                    )
+                # Если другая IntegrityError — пробрасываем дальше
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ошибка целостности данных"
+            )
+
+        # todo - Необходимо доделать сессионность и закрытие сессии
+        token = Token(access_token="", refresh_token=None)
+
+        return AuthResponse(user_data = OutUser.from_orm(user),token=token)
 
 
 

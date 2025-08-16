@@ -3,14 +3,14 @@ from pydantic import BaseModel, EmailStr, Field
 
 # ---- Request / Input ----
 class UserCreate(BaseModel):
-    username: str = Field(..., alias="user_name")
+    user_name: str = Field(..., alias="userName")
     email: Optional[EmailStr] = None
     password: str = Field(..., alias="passUser")
     first_name: Optional[str] = Field(None, alias="firstName")
     last_name: Optional[str] = Field(None, alias="lastName")
 
     class Config:
-        allow_population_by_field_name = True
+        validate_by_name = True
         # можно добавить валидации/регулярки для username, длину пароля и т.д.
 
 class LogInUser(BaseModel):
@@ -18,13 +18,13 @@ class LogInUser(BaseModel):
     password: str = Field(..., alias="passUser")
 
     class Config:
-        allow_population_by_field_name = True
+        validate_by_name = True
 
 class LogOutUser(BaseModel):
     user_id: int = Field(..., alias="idUser")
 
     class Config:
-        allow_population_by_field_name = True
+        validate_by_name = True
 
 # ---- Response / Output ----
 class OutUser(BaseModel):
@@ -35,8 +35,8 @@ class OutUser(BaseModel):
     last_name: Optional[str] = Field(None, alias="lastName")
 
     class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+        validate_by_name = True
+        from_attributes = True
 
 
 class RoleUser(BaseModel):
@@ -55,8 +55,8 @@ class AuthResponse(BaseModel):
     token: Token = Field(...,alias="tokenUser")
 
     class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+        from_attributes = True
+        validate_by_name = True
 
 
 

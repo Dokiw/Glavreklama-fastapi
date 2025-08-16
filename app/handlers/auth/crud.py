@@ -3,6 +3,7 @@ from app.handlers.auth.schemas import OutUser, UserCreate, RoleUser
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.handlers.auth.interfaces import AsyncUserRepository
 from sqlalchemy import select
+from app.models.auth.models import User as UserModel, Role as RoleModel
 
 from typing import TYPE_CHECKING, Optional, List
 if TYPE_CHECKING:
@@ -25,8 +26,12 @@ class UserRepository(AsyncUserRepository):
         )
 
     async def create_user(self, user_in: UserCreate) -> OutUser:
-        m = UserModel(username=user_in.username, email=user_in.email)
+        m = UserModel()
+        m.user_name = user_in.username
         m.password = user_in.password
+        m.email = user_in.email or None
+        m.first_name = user_in.first_name or None
+        m.last_name = user_in.last_name or None
         self.db.add(m)
         await self.db.commit()
         await self.db.refresh(m)
