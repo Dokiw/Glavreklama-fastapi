@@ -11,7 +11,7 @@ class UserCreate(BaseModel):
 
     class Config:
         validate_by_name = True
-        # можно добавить валидации/регулярки для username, длину пароля и т.д.
+        #todo можно добавить валидации/регулярки для username, длину пароля и т.д.
 
 class LogInUser(BaseModel):
     username: str = Field(..., alias="userName")

@@ -1,5 +1,5 @@
 import click
-from app.db.migrations import create_migration, upgrade_database, create_initial_migration
+from app.db.migration.migrations import create_migration, upgrade_database, create_initial_migration
 
 @click.group()
 async def cli():

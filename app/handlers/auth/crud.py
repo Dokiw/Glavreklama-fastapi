@@ -27,7 +27,7 @@ class UserRepository(AsyncUserRepository):
 
     async def create_user(self, user_in: UserCreate) -> OutUser:
         m = UserModel()
-        m.user_name = user_in.username
+        m.user_name = user_in.user_name
         m.password = user_in.password
         m.email = user_in.email or None
         m.first_name = user_in.first_name or None

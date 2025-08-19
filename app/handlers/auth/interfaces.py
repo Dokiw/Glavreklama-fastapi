@@ -22,7 +22,7 @@ class AsyncUserRepository(Protocol):
     async def create_user(self,user_in: UserCreate) -> OutUser:
         ...
 
-    async def list_users(self, limit: int =    100, offset: int = 0) -> List[OutUser]:
+    async def list_users(self, limit: int = 100, offset: int = 0) -> List[OutUser]:
         ...
 
     async def get_auth_data(self,user_name: str) -> Optional[UserAuthData]:

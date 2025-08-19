@@ -1,8 +1,6 @@
 from fastapi import APIRouter,HTTPException
 
 from app.handlers.auth.schemas import LogInUser, UserCreate, LogOutUser, AuthResponse,RoleUser
-from app.handlers.auth.service import SqlAlchemyAuth
-from app.handlers.auth.crud import UserRepository,RoleRepository
 from app.handlers.auth.dependencies import AuthServiceDep
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
