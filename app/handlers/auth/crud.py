@@ -66,6 +66,7 @@ class UserRepository(AsyncUserRepository):
             first_name=user.first_name,
         ) if user else None
 
+
 class RoleRepository(AsyncUserRepository):
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -75,6 +76,7 @@ class RoleRepository(AsyncUserRepository):
         result = await self.db.execute(q)
         role = result.scalar_one_or_none()
         return RoleUser(name=role.name,description=role.description)
+
     async def get_by_user_id(self,id_user: int) -> Optional[RoleUser]:
         q = select(RoleModel).join(UserModel, RoleUser.id == UserModel.role_id).where(UserModel.id == id_user).limit(1)
         result = await self.db.execute(q)

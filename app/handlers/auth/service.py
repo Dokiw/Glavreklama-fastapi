@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 import asyncpg
 from app.handlers.auth.dto import UserAuthData
