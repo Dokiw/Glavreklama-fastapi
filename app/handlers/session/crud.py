@@ -1,4 +1,5 @@
-import datetime
+from datetime import datetime, timezone, timedelta
+
 import time
 
 from app.handlers.session.schemas import *
@@ -49,6 +50,7 @@ class SessionRepository(AsyncSessionRepository):
             logged_out_at=m.logged_out_at,
             created_at=m.created_at,
             last_used_at=m.last_used_at,
+            ip_address=m.ip_address
         )
 
     async def open_session(self, session_data: OpenSession) -> OutSession:
@@ -159,18 +161,20 @@ class RefreshTokenRepository(AsyncRefreshTokenRepository):
     async def create_refresh_token(self, refresh_token_data: CreateRefreshToken) -> OutRefreshToken:
         m = RefreshTokenModel()
         m.session_id = refresh_token_data.session_id
-        m.revoked = True
-        m.expires_at = refresh_token_data.expires or str(time.time() + 86400)
+        m.revoked = False
+        m.expires_at = refresh_token_data.expires or datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
         m.created_at = datetime.datetime.now()
-        m.used_at = datetime.datetime.now()
+        m.used_at = None
 
         timestamp = str(time.time()).encode()
-
-        m.token_hash = hashlib.sha256(timestamp)
+        m.token_hash = hashlib.sha256(timestamp).hexdigest()
 
         self.db.add(m)
         await self.db.commit()
         await self.db.refresh(m)
+
+        m.token_hash = timestamp.decode()
+
         return await self._to_dto(m)
 
     async def update_refresh_token(self, refresh_token_data: UpdateRefreshToken) -> OutRefreshToken:
@@ -200,7 +204,7 @@ class RefreshTokenRepository(AsyncRefreshTokenRepository):
         result = await self.db.get(RefreshTokenModel, id_refresh_token)
         return self._to_dto(result) if result else None
 
-    async def get_by_session_id(self, id_session: int, offset: int = 0, limit: int = 50) -> list[
+    async def get_by_session_id_refresh(self, id_session: int, offset: int = 0, limit: int = 50) -> list[
         Optional[OutRefreshToken]]:
         stmt = (
             select(RefreshTokenModel)
@@ -236,28 +240,30 @@ class OauthClient(AsyncOauthClient):
             is_confidential=m.is_confidential,
             created_at=m.created_at,
             updated_at=m.updated_at,
+            revoked=m.revoked,
         )
 
-    async def create_oauth_client(self, oauth_client_data: CreateOauthClient) -> OutOauthClient:
+    async def create_oauth_client(self, oauth_client_data: CreateOauthClient) -> Optional[OutOauthClient]:
         m = OAuthClientModel()
         m.name = oauth_client_data.name
         m.client_id = oauth_client_data.client_id
 
         timestamp = str(time.time()).encode()
-        m.client_secret = hashlib.sha256(timestamp)
+        m.client_secret = hashlib.sha256(timestamp).hexdigest()
 
         m.created_at = datetime.datetime.now()
         m.redirect_url = oauth_client_data.redirect_url
         m.grant_types = oauth_client_data.grant_types
         m.is_confidential = oauth_client_data.is_confidential
-        m.revoked = True
-        m.scopes = m.scopes
+        m.revoked = False
+        m.scopes = oauth_client_data.scopes
         m.updated_at = datetime.datetime.now()
 
         self.db.add(m)
         await self.db.commit()
         await self.db.refresh(m)
-        return await self._to_dto(m)
+        m.client_secret = timestamp
+        return await self._to_dto(m) if m else None
 
     async def update_oauth_client(self, oauth_client_data: UpdateOauthClient) -> OutOauthClient:
         stmt = (
@@ -270,6 +276,7 @@ class OauthClient(AsyncOauthClient):
                 grant_types=oauth_client_data.grant_types,
                 scopes=oauth_client_data.scopes,
                 is_confidential=oauth_client_data.is_confidential,
+                revoked=oauth_client_data.revoked
             )
         )
 

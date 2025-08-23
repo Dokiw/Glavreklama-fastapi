@@ -64,6 +64,7 @@ class OutSession(BaseModel):
     logged_out_at: Optional[datetime.datetime] = Field(None, alias="loggedOutAt")
     created_at: Optional[datetime.datetime] = Field(None, alias="createdAt")
     last_used_at: Optional[datetime.datetime] = Field(None, alias="lastUserAt")
+    ip_address: Optional[str] = Field(None, alias="IpAddress")
 
     class Config:
         validate_by_name = True
@@ -128,7 +129,7 @@ class UpdateOauthClient(BaseModel):
     grant_types: Optional[list[str]] = Field(None, alias="GrantType")
     scopes: Optional[list[str]] = Field(None, alias="Scopes")
     is_confidential: Optional[bool] = Field(None, alias="IsConfidential")
-
+    revoked: Optional[bool] = Field(None,alias="Revoked")
     class Config:
         validate_by_name = True
 
@@ -136,6 +137,7 @@ class UpdateOauthClient(BaseModel):
 class CheckOauthClient(BaseModel):
     id: int = Field(..., alias="Id")
     client_id: str = Field(..., alias="ClientId")
+    client_secret: Optional[str] = Field(None,alias="ClientSecret")
     grant_types: Optional[str] = Field(None, alias="GrantType")
     redirect_url: Optional[str] = Field(None, alias="RedirectUrl")
     scopes: Optional[list[str]] = Field(None, alias="Scopes")
@@ -158,6 +160,7 @@ class OutOauthClient(BaseModel):
     is_confidential: bool = Field(..., alias="IsConfidential")
     created_at: datetime.datetime = Field(..., alias="CreatedAt")
     updated_at: datetime.datetime = Field(..., alias="UpdatedAt")
+    revoked: bool = Field(..., alias="Revoked")
 
     class Config:
         validate_by_name = True
