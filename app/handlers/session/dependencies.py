@@ -1,24 +1,33 @@
-# app/handlers/auth/dependencies.py
+# app/handlers/session/dependencies.py
 from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.handlers.auth.crud import UserRepository, RoleRepository
-from app.handlers.auth.service import SqlAlchemyAuth
-from app.handlers.auth.interfaces import AsyncUserRepository, AsyncRoleRepository
+from app.handlers.session.service import SqlAlchemyServiceRefreshToken, SqlAlchemyServiceSession
+from app.handlers.session.UOW import SqlAlchemyUnitOfWork, IUnitOfWorkSession
+from app.handlers.session.crud import SessionRepository, RefreshTokenRepository
+from app.handlers.session.interfaces import AsyncSessionService, AsyncRefreshTokenService
 
-def get_user_repo(db: AsyncSession = Depends(get_db)) -> AsyncUserRepository:
-    return UserRepository(db)
 
-def get_role_repo(db: AsyncSession = Depends(get_db)) -> AsyncRoleRepository:
-    return RoleRepository(db)
+# фабрика UnitOfWork
+async def get_uow(db: AsyncSession = Depends(get_db)) -> IUnitOfWorkSession:
+    async with SqlAlchemyUnitOfWork(lambda: db) as uow:
+        yield uow
 
-def get_auth_service(
-    user_repo: AsyncUserRepository = Depends(get_user_repo),
-    role_repo: AsyncRoleRepository = Depends(get_role_repo),
-) -> SqlAlchemyAuth:
-    return SqlAlchemyAuth(user_repo, role_repo)
 
-# alias для роутов (удобно)
-AuthServiceDep = Annotated[SqlAlchemyAuth, Depends(get_auth_service)]
+# фабрика сервиса refresh токенов
+def get_refresh_service(uow: IUnitOfWorkSession = Depends(get_uow)) -> AsyncRefreshTokenService:
+    return SqlAlchemyServiceRefreshToken(uow)
+
+
+# фабрика сервиса сессий
+def get_session_service(
+    uow: IUnitOfWorkSession = Depends(get_uow),
+    refresh_service: AsyncRefreshTokenService = Depends(get_refresh_service),
+) -> AsyncSessionService:
+    return SqlAlchemyServiceSession(uow, refresh_service)
+
+
+# alias для роутов
+SessionServiceDep = Annotated[SqlAlchemyServiceSession, Depends(get_session_service)]

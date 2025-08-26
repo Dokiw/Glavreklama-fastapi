@@ -1,24 +1,40 @@
-# app/handlers/auth/dependencies.py
-from typing import Annotated
+from typing import Annotated, AsyncGenerator
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.handlers.auth.crud import UserRepository, RoleRepository
+from app.handlers.auth.schemas import LogInUser, AuthResponse
 from app.handlers.auth.service import SqlAlchemyAuth
-from app.handlers.auth.interfaces import AsyncUserRepository, AsyncRoleRepository
+from app.handlers.auth.UOW import SqlAlchemyUnitOfWork, IUnitOfWorkAuth
+from app.handlers.session.dependencies import SessionServiceDep  # <- твой сервис сессий
+from app.handlers.session.service import AsyncSessionService  # <- интерфейс/сервис сессий
+from fastapi import Depends
 
-def get_user_repo(db: AsyncSession = Depends(get_db)) -> AsyncUserRepository:
-    return UserRepository(db)
 
-def get_role_repo(db: AsyncSession = Depends(get_db)) -> AsyncRoleRepository:
-    return RoleRepository(db)
+# фабрика UoW
+async def get_uow(db: AsyncSession = Depends(get_db)) -> AsyncGenerator[IUnitOfWorkAuth, None]:
+    uow = SqlAlchemyUnitOfWork(lambda: db)
+    await uow.__aenter__()
+    try:
+        yield uow
+    finally:
+        await uow.__aexit__(None, None, None)
 
+
+# фабрика сервиса Auth с передачей SessionService
 def get_auth_service(
-    user_repo: AsyncUserRepository = Depends(get_user_repo),
-    role_repo: AsyncRoleRepository = Depends(get_role_repo),
+    session_service: SessionServiceDep,
+    uow: IUnitOfWorkAuth = Depends(get_uow),
 ) -> SqlAlchemyAuth:
-    return SqlAlchemyAuth(user_repo, role_repo)
+    return SqlAlchemyAuth(uow, session_service)
 
-# alias для роутов (удобно)
+async def get_auth_service_dep(
+    session_service: SessionServiceDep,
+    uow: IUnitOfWorkAuth = Depends(get_uow),
+) -> SqlAlchemyAuth:
+    return SqlAlchemyAuth(uow, session_service)
+
+
+
+# alias для роутов
 AuthServiceDep = Annotated[SqlAlchemyAuth, Depends(get_auth_service)]

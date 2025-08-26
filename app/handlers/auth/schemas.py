@@ -17,6 +17,8 @@ class LogInUser(BaseModel):
     username: str = Field(..., alias="userName")
     password: str = Field(..., alias="passUser")
 
+    client_id: Optional[int] = Field(None, alias="clientId")
+
     class Config:
         validate_by_name = True
 

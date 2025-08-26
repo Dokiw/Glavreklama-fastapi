@@ -1,5 +1,15 @@
 from typing import Protocol, List, Optional
-from app.handlers.session.schemas import *
+from app.handlers.session.schemas import (
+    OpenSession,
+    OutSession,
+    CheckSessionAccessToken,
+    CheckSessionRefreshToken,
+    OutRefreshToken,
+    RefreshSession,
+    LogoutSession, CreateRefreshToken, UpdateRefreshToken, CreateOauthClient, OutOauthClient, UpdateOauthClient,
+    CheckOauthClient
+)
+import datetime
 
 
 class AsyncSessionRepository(Protocol):
@@ -23,6 +33,10 @@ class AsyncSessionRepository(Protocol):
         ...
 
     async def get_by_access_token_session(self, access_token: str) -> Optional[OutSession]:
+        ...
+
+    async def deactivate_by_token_ip_ua(self, access_token: str, ip: str, user_agent: str,
+                                        id_user: int | None = None) -> Optional[OutSession]:
         ...
 
 
@@ -61,18 +75,27 @@ class AsyncSessionService(Protocol):
     async def close_session(self, id_session: int) -> None:
         ...
 
-    async def validate_access_token_session(self, check_access_token_data: CheckSessionAccessToken) -> Optional[OutSession]:
+    async def validate_access_token_session(self, check_access_token_data: CheckSessionAccessToken) -> Optional[
+        OutSession]:
         ...
 
-    async def validate_refresh_token_session(self, check_refresh_token_data: CheckSessionRefreshToken) -> Optional[OutSession]:
+    async def validate_refresh_token_session(self, check_refresh_token_data: CheckSessionRefreshToken) -> Optional[
+        OutSession]:
         ...
 
+    async def get_by_id_user_session(self, id_user: int) -> Optional[OutSession]:
+        ...
 
+    async def get_by_access_token_session(self, access_token: str) -> Optional[OutSession]:
+        ...
+
+    async def logout_session(self, logout_data: LogoutSession) -> Optional[OutSession]:
+        ...
 
 
 class AsyncRefreshTokenService(Protocol):
 
-    async def create_refresh_token(self, session_id: int,expires_at: datetime.datetime) -> OutRefreshToken:
+    async def create_refresh_token(self, session_id: int, expires_at: datetime.datetime) -> OutRefreshToken:
         ...
 
     async def check(self, id_refresh_token: int, refresh_token: str) -> Optional[OutRefreshToken]:
@@ -87,8 +110,8 @@ class AsyncOauthClientService(Protocol):
     async def create_oauth_client(self, create_oauth_client_data: CreateOauthClient) -> OutOauthClient:
         ...
 
-    async def check_oauth_client(self,check_data: CheckOauthClient) -> Optional[OutOauthClient]:
+    async def check_oauth_client(self, check_data: CheckOauthClient) -> Optional[OutOauthClient]:
         ...
 
-    async def close_oauth_client(self,oauth_client_id: int) -> None:
+    async def close_oauth_client(self, oauth_client_id: int) -> None:
         ...

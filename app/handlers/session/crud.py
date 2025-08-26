@@ -10,7 +10,8 @@ from sqlalchemy import select, update
 from app.models.sessions.models import Session as SessionModel, RefreshToken as RefreshTokenModel, \
     OAuthClient as OAuthClientModel
 
-from app.handlers.session.interfaces import AsyncSessionRepository, AsyncRefreshTokenRepository, AsyncOauthClient
+from app.handlers.session.interfaces import AsyncSessionRepository, AsyncRefreshTokenRepository, \
+    AsyncOauthClientRepository
 
 from typing import TYPE_CHECKING, Optional, List
 
@@ -53,6 +54,27 @@ class SessionRepository(AsyncSessionRepository):
             ip_address=m.ip_address
         )
 
+    async def deactivate_by_token_ip_ua(self, access_token: str, ip: str, user_agent: str,
+                                        id_user: int | None = None) -> Optional[OutSession]:
+        stmt = (
+            update(SessionModel)
+            .where(
+                SessionModel.access_token == access_token,
+                SessionModel.ip_address == ip,
+                SessionModel.user_agent == user_agent,
+                SessionModel.is_active.is_(True),
+            )
+        )
+
+        if id_user is not None:
+            stmt = stmt.where(SessionModel.user_id == id_user)
+
+        stmt = stmt.values(is_active=False).returning(SessionModel)
+        result = await self.db.execute(stmt)
+        result = result.scalar_one_or_none()
+
+        return self._to_dto(result) if result else None
+
     async def open_session(self, session_data: OpenSession) -> OutSession:
         m = SessionModel()
         m.user_id = session_data.user_id
@@ -69,8 +91,6 @@ class SessionRepository(AsyncSessionRepository):
 
         # Надо также сделать рефреш токен
         self.db.add(m)
-        await self.db.commit()
-        await self.db.refresh(m)
         return await self._to_dto(m)
 
     async def close_session(self, session_id: int) -> None:
@@ -80,8 +100,6 @@ class SessionRepository(AsyncSessionRepository):
             .values(is_active=False)
         )
         await self.db.execute(stmt)
-        await self.db.commit()
-
         return None
 
     async def refresh_session(self, refresh_data: RefreshSession) -> Optional[OutSession]:
@@ -107,14 +125,13 @@ class SessionRepository(AsyncSessionRepository):
 
         result = await self.db.execute(stmt)
         row = result.first()
-        await self.db.commit()
 
         if row is None:
             return None
 
         return await self._to_dto(row[0])
 
-    async def get_by_id_session(self, id_session: int) -> Optional[OutSession]:
+    async def get_by_id_session_refresh(self, id_session: int) -> Optional[OutSession]:
         result = await self.db.get(SessionModel, id_session)
         return await self._to_dto(result) if result else None
 
@@ -131,10 +148,15 @@ class SessionRepository(AsyncSessionRepository):
         return [await self._to_dto(r) for r in sessions]
 
     async def get_by_access_token_session(self, access_token: str) -> Optional[OutSession]:
-        q = select(SessionModel).where(SessionModel.access_token == access_token)
-        result = await self.db.execute(q)
-        session = result.scalar_one_or_none()
-        return await self._to_dto(session)
+        stmt = select(SessionModel).where(
+            SessionModel.access_token == access_token,
+            SessionModel.is_active == True
+        ).limit(1)
+        res = await self.db.execute(stmt)
+        model = res.scalars().first()
+        if model is None:
+            return None
+        return await self._to_dto(model)
 
 
 class RefreshTokenRepository(AsyncRefreshTokenRepository):
@@ -170,15 +192,13 @@ class RefreshTokenRepository(AsyncRefreshTokenRepository):
         m.token_hash = hashlib.sha256(timestamp).hexdigest()
 
         self.db.add(m)
-        await self.db.commit()
-        await self.db.refresh(m)
 
         m.token_hash = timestamp.decode()
 
         return await self._to_dto(m)
 
     async def update_refresh_token(self, refresh_token_data: UpdateRefreshToken) -> OutRefreshToken:
-        #todo - нужно поменять генерацию токена, у него есть проблемы
+        # todo - нужно поменять генерацию токена, у него есть проблемы
         timestamp = str(time.time()).encode()
         new_token = hashlib.sha256(timestamp).hexdigest()
 
@@ -196,7 +216,6 @@ class RefreshTokenRepository(AsyncRefreshTokenRepository):
 
         result = await self.db.execute(stmt)
         result = result.scalar_one_or_none()
-        await self.db.commit()
 
         return await self._to_dto(result)
 
@@ -218,7 +237,7 @@ class RefreshTokenRepository(AsyncRefreshTokenRepository):
         return [await self._to_dto(r) for r in result]
 
 
-class OauthClient(AsyncOauthClient):
+class OauthClientRepository(AsyncOauthClientRepository):
     def __init__(self, db: AsyncSession):
         self.db = db
 
@@ -260,8 +279,6 @@ class OauthClient(AsyncOauthClient):
         m.updated_at = datetime.datetime.now()
 
         self.db.add(m)
-        await self.db.commit()
-        await self.db.refresh(m)
         m.client_secret = timestamp
         return await self._to_dto(m) if m else None
 
@@ -282,8 +299,6 @@ class OauthClient(AsyncOauthClient):
 
         result = await self.db.execute(stmt)
         result = result.scalar_one_or_none()
-        await self.db.commit()
-
         return await self._to_dto(result)
 
     async def get_by_id_oauth_client(self, id_oauth_client: int) -> Optional[OutOauthClient]:

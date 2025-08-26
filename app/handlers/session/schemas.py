@@ -41,7 +41,6 @@ class CheckSessionAccessToken(BaseModel):
     id_address: str = Field(..., alias="ipAddress")
     user_agent: str = Field(..., alias="userAgent")
 
-
     class Config:
         validate_by_name = True
 
@@ -52,6 +51,20 @@ class CheckSessionRefreshToken(BaseModel):
     refresh_token: str = Field(..., alias="refreshToken")
     ip_address: Optional[str] = Field(None, alias="ipAddress")
     user_agent: Optional[str] = Field(None, alias="userAgent")
+
+    class Config:
+        validate_by_name = True
+
+
+class LogoutSession(BaseModel):
+    user_id: int = Field(..., alias="UserId")
+    access_token: str = Field(..., alias="AccessToken")
+    id_address: str = Field(..., alias="ipAddress")
+    user_agent: str = Field(..., alias="userAgent")
+
+    class Config:
+        validate_by_name = True
+
 
 # ---- Response / Output ---- SESSION
 class OutSession(BaseModel):
@@ -129,7 +142,8 @@ class UpdateOauthClient(BaseModel):
     grant_types: Optional[list[str]] = Field(None, alias="GrantType")
     scopes: Optional[list[str]] = Field(None, alias="Scopes")
     is_confidential: Optional[bool] = Field(None, alias="IsConfidential")
-    revoked: Optional[bool] = Field(None,alias="Revoked")
+    revoked: Optional[bool] = Field(None, alias="Revoked")
+
     class Config:
         validate_by_name = True
 
@@ -137,7 +151,7 @@ class UpdateOauthClient(BaseModel):
 class CheckOauthClient(BaseModel):
     id: int = Field(..., alias="Id")
     client_id: str = Field(..., alias="ClientId")
-    client_secret: Optional[str] = Field(None,alias="ClientSecret")
+    client_secret: Optional[str] = Field(None, alias="ClientSecret")
     grant_types: Optional[str] = Field(None, alias="GrantType")
     redirect_url: Optional[str] = Field(None, alias="RedirectUrl")
     scopes: Optional[list[str]] = Field(None, alias="Scopes")

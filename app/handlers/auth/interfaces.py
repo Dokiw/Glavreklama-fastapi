@@ -1,6 +1,14 @@
 from typing import Protocol, List, Optional
-from app.handlers.auth.schemas import *
+from app.handlers.auth.schemas import (
+    RoleUser, 
+    OutUser, 
+    UserCreate, 
+    LogInUser, 
+    AuthResponse
+)
 from app.handlers.auth.dto import UserAuthData
+from app.handlers.session.schemas import CheckSessionAccessToken
+
 
 class AsyncRoleRepository(Protocol):
 
@@ -33,14 +41,14 @@ class AsyncUserRepository(Protocol):
 #для аунтификации и авторизации
 class AsyncAuthService(Protocol):
     """Сервис авторизации/аутентификации."""
-    async def identification(self,id_user: int) -> Optional[RoleUser]:
+    async def identification(self, id_user: int,ip: str, user_agent: str, access_token: str) -> Optional[RoleUser]:
         ...
 
-    async def login(self, login_data: LogInUser) -> AuthResponse:  # например возвращает токен + user
+    async def login(self, login_data: LogInUser, ip: str, user_agent: str) -> AuthResponse:  # например возвращает токен + user
         ...
 
-    async def logout(self, user_id: int) -> None:
+    async def logout(self,id_user: int,ip: str, user_agent: str, access_token: str) -> None:
         ...
 
-    async def register(self,user_data: UserCreate) -> Optional[OutUser]:
+    async def register(self,user_data: UserCreate,ip: str, user_agent: str) -> Optional[OutUser]:
         ...
