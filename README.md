@@ -38,32 +38,6 @@ uvicorn main:app --reload
 Открыть документацию OpenAPI:
 http://127.0.0.1:8000/docs
 
-Структура проекта (кратко)
-.
-├─ .venv
-├─ alembic/                # миграции
-├─ app/
-│  ├─ core/
-│  │  ├─ abs/              # абстракции (unit_of_work и т.п.)
-│  │  └─ config.py
-│  ├─ db/
-│  │  ├─ migration/
-│  │  ├─ base.py
-│  │  └─ session.py
-│  ├─ handlers/
-│  │  ├─ auth/
-│  │  │  ├─ router.py
-│  │  │  ├─ dependencies.py
-│  │  │  ├─ service.py
-│  │  │  ├─ UOW.py
-│  │  │  ├─ crud/
-│  │  │  └─ schemas.py
-│  │  └─ ... (session, pay, constructions ...)
-│  ├─ models/
-│  └─ main.py
-├─ README.md
-└─ ...
-
 Как добавлять новый модуль
 Создать папку app/handlers/<module_name>.
 
