@@ -52,6 +52,7 @@ class Token(BaseModel):
     access_token: str
     refresh_token: Optional[str] = None
     expires_in: Optional[int] = None  # seconds
+
 class AuthResponse(BaseModel):
     user_data: OutUser = Field(..., alias="userData")
     token: Token = Field(...,alias="tokenUser")

@@ -20,7 +20,9 @@ class SqlAlchemyUnitOfWork(IUnitOfWorkSession):
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is not None:
+        if exc_type is None:
+            await self.commit()  # автоматически сохраняем изменения
+        else:
             await self.rollback()
         await self._session.close()
 

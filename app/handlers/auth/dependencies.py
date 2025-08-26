@@ -13,12 +13,9 @@ from fastapi import Depends
 
 # фабрика UoW
 async def get_uow(db: AsyncSession = Depends(get_db)) -> AsyncGenerator[IUnitOfWorkAuth, None]:
-    uow = SqlAlchemyUnitOfWork(lambda: db)
-    await uow.__aenter__()
-    try:
+    uow = SqlAlchemyUnitOfWork(lambda: db)  # тут session_factory — обычная функция
+    async with uow:
         yield uow
-    finally:
-        await uow.__aexit__(None, None, None)
 
 
 # фабрика сервиса Auth с передачей SessionService

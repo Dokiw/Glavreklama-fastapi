@@ -1,7 +1,8 @@
-from fastapi import APIRouter,HTTPException
+from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from app.handlers.auth.schemas import LogInUser, UserCreate, LogOutUser, AuthResponse,RoleUser
 from app.handlers.session.dependencies import SessionServiceDep
-from app.handlers.session.schemas import OpenSession, CloseSession, OutSession, CheckSessionAccessToken
+from app.handlers.session.schemas import OpenSession, CloseSession, OutSession, CheckSessionAccessToken, \
+    CheckSessionRefreshToken
 
 router = APIRouter(prefix="/session", tags=["session"])
 
@@ -19,14 +20,15 @@ async def hub():
 #     return await session_service.close_session(session_close)
 
 @router.post("/refresh_token",response_model=OutSession)
-async def validate_session(session_service: SessionServiceDep,id: int, user_id: int, access_token: str, ip: str, user_agent: str):
-
-    session_data = CheckSessionAccessToken(
-        id=id,
+async def validate_session(session_service: SessionServiceDep, user_id: int,
+                           refresh_token: str, request: Request):
+    # Получаем IP и User-Agent из запроса
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "")
+    session_data = CheckSessionRefreshToken(
         user_id=user_id,
-        access_token=access_token,
+        refresh_token=refresh_token,
         id_address=ip,
         user_agent=user_agent,
     )
-
     return await session_service.validate_refresh_token_session(session_data)

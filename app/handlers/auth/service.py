@@ -39,6 +39,9 @@ class SqlAlchemyAuth(AsyncAuthService):
                 role: Optional[RoleUser] = await self.uow.role_repo.get_by_user_id(id_user)
                 if not role:
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             # Откатываем транзакцию при любой другой ошибке
             raise HTTPException(
@@ -61,7 +64,7 @@ class SqlAlchemyAuth(AsyncAuthService):
 
                 session = await self.session_service.open_session(OpenSession(
                     user_id=auth.id,
-                    client_id=login_data.client_id,
+                    client_id=login_data.client_id if login_data.client_id else None,
                     ip_address=ip,
                     user_agent=user_agent,
                 ))
@@ -80,7 +83,9 @@ class SqlAlchemyAuth(AsyncAuthService):
                     access_token=session.access_token,
                     refresh_token=session.refresh_token
                 )
-
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             # Откатываем транзакцию при любой другой ошибке
             raise HTTPException(
@@ -96,6 +101,7 @@ class SqlAlchemyAuth(AsyncAuthService):
                 session = await self.session_service.get_by_access_token_session(access_token)
                 if session is None:
                     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
+
                 session_data = CheckSessionAccessToken(
                     id=session.id,
                     user_id=session.user_id,
@@ -105,11 +111,14 @@ class SqlAlchemyAuth(AsyncAuthService):
                 )
                 session: Optional[OutSession] = await self.session_service.validate_access_token_session(session_data)
                 await self.session_service.close_session(session.id)
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             # Откатываем транзакцию при любой другой ошибке
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Внутренняя ошибка сервера: {str(e)}"
+                detail=f"Внутренняя ошибка сервера: {str(e)} -- тут 1"
             )
         return None
 
@@ -119,7 +128,6 @@ class SqlAlchemyAuth(AsyncAuthService):
                 user: Optional[OutUser] = await self.uow.user_repo.create_user(user_data)
                 session_data = OpenSession(
                     user_id=user.id,
-                    client_id=None,
                     ip_address=ip,
                     user_agent=user_agent,
                 )
@@ -135,8 +143,11 @@ class SqlAlchemyAuth(AsyncAuthService):
                 # Если другая IntegrityError — пробрасываем дальше
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ошибка целостности данных и {str(e)}"
+                detail=f"Ошибка целостности данных"
             )
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             # Откатываем транзакцию при любой другой ошибке
             raise HTTPException(

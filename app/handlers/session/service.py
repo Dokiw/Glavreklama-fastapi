@@ -2,8 +2,11 @@ import asyncio
 import datetime
 import hashlib
 from datetime import time
-from datetime import datetime, timezone
+import datetime as dt
 from typing import Optional, List, cast
+
+import hmac, logging
+
 
 from fastapi import HTTPException, status, Depends
 from sqlalchemy.exc import IntegrityError
@@ -21,6 +24,8 @@ from app.handlers.session.schemas import OpenSession, OutSession, CheckOauthClie
     UpdateRefreshToken, RefreshSession, LogoutSession
 
 
+
+
 # todo: заменить генерацию токена на безопасную для продакшена
 class SqlAlchemyServiceSession(AsyncSessionService):
     def __init__(self, uow: IUnitOfWorkSession, refresh_service: AsyncRefreshTokenService):
@@ -35,15 +40,15 @@ class SqlAlchemyServiceSession(AsyncSessionService):
                 session = await self.uow.sessions.open_session(session_data)
 
                 # Создаем refresh token
-                refresh_token_data = CreateRefreshToken(
-                    session_id=session.id,
-                    expires_at=datetime.now(timezone.utc) + datetime.timedelta(days=1)
-                )
 
-                refresh_token = await self.refresh_service.create_refresh_token(refresh_token_data)
+                session_id: int = session.id
+                expires_at = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1)
+
+                refresh_token = await self.refresh_service.create_refresh_token(session_id=session_id,
+                                                                                expires_at=expires_at)
 
                 # Обновляем сессию
-                session.refresh_token_id = refresh_token.id
+                session.refresh_token = refresh_token.token_hash
 
                 # Коммитим транзакцию
                 await self.uow.commit()
@@ -54,6 +59,9 @@ class SqlAlchemyServiceSession(AsyncSessionService):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Ошибка целостности данных при создании сессии"
             )
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             # Откатываем транзакцию при любой другой ошибке
             raise HTTPException(
@@ -65,6 +73,7 @@ class SqlAlchemyServiceSession(AsyncSessionService):
         try:
             async with self.uow:
                 await self.uow.sessions.close_session(id_session)
+
                 await self.uow.commit()
         except IntegrityError as e:
             pgcode = getattr(getattr(e, "orig", None), "pgcode", None)
@@ -77,17 +86,20 @@ class SqlAlchemyServiceSession(AsyncSessionService):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Ошибка целостности данных"
             )
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Внутренняя ошибка сервера: {str(e)}"
+                detail=f"Внутренняя ошибка сервера: {str(e)} -- тут 3"
             )
 
     async def validate_access_token_session(self, check_access_token_data: CheckSessionAccessToken) -> Optional[
         OutSession]:
         try:
             async with self.uow:
-                session = await self.uow.sessions.get_by_id_session(check_access_token_data.id)
+                session = await self.uow.sessions.get_by_id_session_refresh(check_access_token_data.id)
 
                 if session is None:
                     raise HTTPException(
@@ -127,18 +139,20 @@ class SqlAlchemyServiceSession(AsyncSessionService):
                         "refresh_token", "is_active", "logged_out_at",
                         "created_at", "last_used_at"
                     }),
-                    refresh_token_id=session.refresh_token_id,  # если есть
+                    refresh_token=session.refresh_token,  # если есть
                     id_address=session.ip_address,  # мэппинг IP
                 )
 
                 session = await self.uow.sessions.refresh_session(session_data)
 
                 await self.uow.commit()
-
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Внутренняя ошибка сервера: {str(e)}"
+                detail=f"Внутренняя ошибка сервера: {str(e)} -- тут 2"
             )
 
         return session
@@ -148,7 +162,7 @@ class SqlAlchemyServiceSession(AsyncSessionService):
     ) -> OutSession:
         try:
             async with self.uow:
-                session = await self.uow.sessions.get_by_id_session(check_refresh_token_data.id)
+                session = await self.uow.sessions.get_by_id_user_session(check_refresh_token_data.user_id)
                 if session is None:
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Отсутствует данные")
 
@@ -159,15 +173,15 @@ class SqlAlchemyServiceSession(AsyncSessionService):
 
                 # создаём задачи для параллельной проверки токенов
                 tasks = [
-                    await self.refresh_service.check(rd.id, rd.token_hash)
+                    self.refresh_service.check(rd.id, check_refresh_token_data.refresh_token)
                     for rd in refresh_datas if not rd.revoked
                 ]
 
                 # запускаем все проверки параллельно
-                results = asyncio.gather(*tasks, return_exceptions=True)
+                results = await asyncio.gather(*tasks, return_exceptions=True)
 
                 # берём первый успешный токен
-                refresh_data = OutRefreshToken()
+                refresh_data: Optional[OutRefreshToken] = None
                 for r in results:
                     if isinstance(r, HTTPException):
                         continue
@@ -176,7 +190,7 @@ class SqlAlchemyServiceSession(AsyncSessionService):
 
                 if refresh_data is None:
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                        detail="Нет действительного refresh токена")
+                                        detail=f"Нет действительного refresh токена -- {print([r for r in results])}")
 
                 # Проверка пользователя
                 if session.user_id != check_refresh_token_data.user_id:
@@ -191,12 +205,15 @@ class SqlAlchemyServiceSession(AsyncSessionService):
                         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ошибка целостности данных")
 
                 # Проверка User-Agent
-                if session.user_agent != check_refresh_token_data.user_agent:
-                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ошибка целостности данных")
+                if session.user_agent and check_refresh_token_data.user_agent:
+                    if session.user_agent != check_refresh_token_data.user_agent:
+                        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ошибка целостности данных")
 
                 # Подставляем «живой» токен
                 session.refresh_token = refresh_data.token_hash
-
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -208,11 +225,13 @@ class SqlAlchemyServiceSession(AsyncSessionService):
     async def get_by_id_user_session(self, id_user: int) -> Optional[OutSession]:
         try:
             async with self.uow:
-                session: Optional[OutSession] = await self.uow.sessions.get_by_id_session(id_user)
+                session: Optional[OutSession] = await self.uow.sessions.get_by_id_session_refresh(id_user)
 
                 if session is None:
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Отсутствует данные")
-
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -224,11 +243,13 @@ class SqlAlchemyServiceSession(AsyncSessionService):
     async def get_by_access_token_session(self, access_token: str) -> Optional[OutSession]:
         try:
             async with self.uow:
-                session: Optional[OutSession] = await self.get_by_access_token_session(access_token)
+                session: Optional[OutSession] = await self.uow.sessions.get_by_access_token_session(access_token)
 
                 if session is None:
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Отсутствует данные")
-
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -251,6 +272,9 @@ class SqlAlchemyServiceSession(AsyncSessionService):
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail="Ошибка целостности данных"
                     )
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -285,9 +309,9 @@ class SqlAlchemyServiceRefreshToken(AsyncRefreshTokenService):
         try:
             async with self.uow:
                 refresh_data: OutRefreshToken = await self.uow.refresh_tokens.create_refresh_token(CreateRefreshToken(
-                    session_id=session_id,
-                    expires_at=expires_at if expires_at else None
-                )
+                        session_id=session_id,
+                        expires_at=expires_at if expires_at else None
+                    )
                 )
 
                 await self.uow.commit()
@@ -306,6 +330,9 @@ class SqlAlchemyServiceRefreshToken(AsyncRefreshTokenService):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Ошибка целостности данных"
             )
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -328,7 +355,7 @@ class SqlAlchemyServiceRefreshToken(AsyncRefreshTokenService):
                 if refresh_data.token_hash != hashlib.sha256(refresh_token.encode()).hexdigest():
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Ошибка целостности данных"
+                        detail=f"Ошибка целостности данных -------- {refresh_data} и {hashlib.sha256(refresh_token.encode()).hexdigest()} "
                     )
 
                 if refresh_data.revoked:
@@ -337,15 +364,12 @@ class SqlAlchemyServiceRefreshToken(AsyncRefreshTokenService):
                         detail=f"Ошибка целостности данных"
                     )
 
-                if refresh_data.expires_at < datetime.now(datetime.timezone.utc):
+                if refresh_data.expires_at < dt.datetime.now(dt.timezone.utc):
                     refresh_data.revoked = True
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail=f"Ошибка целостности данных"
                     )
-
-                timestamp = str(time()).encode()
-                refresh_data.token_hash = hashlib.sha256(timestamp).hexdigest()
 
                 update_dto = UpdateRefreshToken(
                     id=refresh_data.id,
@@ -355,9 +379,9 @@ class SqlAlchemyServiceRefreshToken(AsyncRefreshTokenService):
                 )
 
                 refresh_data = await self.uow.refresh_tokens.update_refresh_token(update_dto)
-
-                refresh_data.token_hash = timestamp.decode()
-
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -376,6 +400,9 @@ class SqlAlchemyServiceRefreshToken(AsyncRefreshTokenService):
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail="Ошибка целостности данных"
                     )
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -414,6 +441,9 @@ class SqlAlchemyServiceOauthClient(AsyncOauthClientService):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Ошибка целостности данных"
             )
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -470,6 +500,9 @@ class SqlAlchemyServiceOauthClient(AsyncOauthClientService):
                             status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Неверно переданы данные"
                         )
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -491,6 +524,9 @@ class SqlAlchemyServiceOauthClient(AsyncOauthClientService):
                     revoked=True
                 )
                 await self.uow.oauth_clients.update_oauth_client(update_data)
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

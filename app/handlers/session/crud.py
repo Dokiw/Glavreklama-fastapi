@@ -1,4 +1,5 @@
-from datetime import datetime, timezone, timedelta
+import datetime as dt
+from datetime import timedelta
 
 import time
 
@@ -31,27 +32,31 @@ class SessionRepository(AsyncSessionRepository):
         if isinstance(m, type):
             raise TypeError(f"_to_dto получил класс {m!r}, ожидается экземпляр Session")
 
-        # запросим последний refresh_token по created_at
+        # запросим последний refresh_token по created_at для конкретной сессии
         stmt = (
-            select(RefreshTokenModel.id)
-            .where(RefreshTokenModel.session_id == m.id and RefreshTokenModel.revoked == True)
+            select(RefreshTokenModel.token_hash)
+            .where(
+                (RefreshTokenModel.session_id == m.id) & (RefreshTokenModel.revoked == False)
+            )
             .order_by(RefreshTokenModel.created_at.desc())
             .limit(1)
         )
         result = await self.db.execute(stmt)
-        last_refresh_token_id = result.scalar_one_or_none()
+        last_refresh_token = result.scalar_one_or_none()
 
+        # Если токен не найден, вернём None, Pydantic примет Optional[str]
         return OutSession(
             id=m.id,
             user_id=m.user_id,
             client_id=m.client_id,
             access_token=m.access_token,
-            refresh_token_id=last_refresh_token_id,
+            refresh_token=last_refresh_token if last_refresh_token else None,  # строка или None
             is_active=m.is_active,
             logged_out_at=m.logged_out_at,
             created_at=m.created_at,
             last_used_at=m.last_used_at,
-            ip_address=m.ip_address
+            ip_address=m.ip_address,
+            user_agent=m.user_agent
         )
 
     async def deactivate_by_token_ip_ua(self, access_token: str, ip: str, user_agent: str,
@@ -82,8 +87,8 @@ class SessionRepository(AsyncSessionRepository):
         m.user_agent = session_data.user_agent
         m.client_id = session_data.client_id
         m.is_active = True
-        m.created_at = datetime.datetime.now()
-        m.last_used_at = datetime.datetime.now()
+        m.created_at = dt.datetime.now(dt.timezone.utc)
+        m.last_used_at = dt.datetime.now(dt.timezone.utc)
 
         # Делаем уникальный токен
         timestamp = str(time.time()).encode()
@@ -91,6 +96,8 @@ class SessionRepository(AsyncSessionRepository):
 
         # Надо также сделать рефреш токен
         self.db.add(m)
+        await self.db.flush()
+
         return await self._to_dto(m)
 
     async def close_session(self, session_id: int) -> None:
@@ -99,7 +106,7 @@ class SessionRepository(AsyncSessionRepository):
             .where(SessionModel.id == session_id)
             .values(is_active=False)
         )
-        await self.db.execute(stmt)
+        res = await self.db.execute(stmt)
         return None
 
     async def refresh_session(self, refresh_data: RefreshSession) -> Optional[OutSession]:
@@ -136,9 +143,9 @@ class SessionRepository(AsyncSessionRepository):
         return await self._to_dto(result) if result else None
 
     async def get_by_id_user_session(self, user_id: int) -> Optional[OutSession]:
-        q = select(SessionModel).where(SessionModel.user_id == user_id)
+        q = select(SessionModel).where(SessionModel.user_id == user_id).order_by(SessionModel.created_at.desc()).limit(1)
         result = await self.db.execute(q)
-        result = result.scalar_one_or_none()
+        result = result.scalars().first()
         return await self._to_dto(result)
 
     async def get_by_id_client_session(self, client_id: int) -> list[OutSession]:
@@ -148,6 +155,7 @@ class SessionRepository(AsyncSessionRepository):
         return [await self._to_dto(r) for r in sessions]
 
     async def get_by_access_token_session(self, access_token: str) -> Optional[OutSession]:
+
         stmt = select(SessionModel).where(
             SessionModel.access_token == access_token,
             SessionModel.is_active == True
@@ -156,6 +164,7 @@ class SessionRepository(AsyncSessionRepository):
         model = res.scalars().first()
         if model is None:
             return None
+
         return await self._to_dto(model)
 
 
@@ -164,11 +173,21 @@ class RefreshTokenRepository(AsyncRefreshTokenRepository):
         self.db = db
 
     @staticmethod
-    async def _to_dto(m: "RefreshTokenModel") -> OutRefreshToken:
+    def _to_dto(m: "RefreshTokenModel", plaintext: Optional[str] = None) -> OutRefreshToken:
         if m is None:
             raise TypeError("_to_dto получил None")
         if isinstance(m, type):
             raise TypeError(f"_to_dto получил класс {m!r}, ожидается экземпляр Session")
+        if plaintext is not None:
+            return OutRefreshToken(
+                id=m.id,
+                session_id=m.session_id,
+                revoked=m.revoked,
+                created_at=m.created_at,
+                expires_at=m.expires_at,
+                used_at=m.used_at,
+                token_hash=plaintext,
+            )
 
         return OutRefreshToken(
             id=m.id,
@@ -184,18 +203,16 @@ class RefreshTokenRepository(AsyncRefreshTokenRepository):
         m = RefreshTokenModel()
         m.session_id = refresh_token_data.session_id
         m.revoked = False
-        m.expires_at = refresh_token_data.expires or datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
-        m.created_at = datetime.datetime.now()
+        m.expires_at = refresh_token_data.expires_at or dt.datetime.now(dt.timezone.utc) + timedelta(days=1)
+        m.created_at = dt.datetime.now(dt.timezone.utc)
         m.used_at = None
 
         timestamp = str(time.time()).encode()
         m.token_hash = hashlib.sha256(timestamp).hexdigest()
 
         self.db.add(m)
-
-        m.token_hash = timestamp.decode()
-
-        return await self._to_dto(m)
+        await self.db.flush()
+        return self._to_dto(m, plaintext=timestamp.decode())
 
     async def update_refresh_token(self, refresh_token_data: UpdateRefreshToken) -> OutRefreshToken:
         # todo - нужно поменять генерацию токена, у него есть проблемы
@@ -209,7 +226,8 @@ class RefreshTokenRepository(AsyncRefreshTokenRepository):
                 session_id=refresh_token_data.session_id,
                 revoked=refresh_token_data.revoked,
                 token_hash=new_token,
-                expires_at=refresh_token_data.expires_at
+                expires_at=refresh_token_data.expires_at,
+
             )
             .returning(RefreshTokenModel)
         )
@@ -217,7 +235,7 @@ class RefreshTokenRepository(AsyncRefreshTokenRepository):
         result = await self.db.execute(stmt)
         result = result.scalar_one_or_none()
 
-        return await self._to_dto(result)
+        return self._to_dto(result,timestamp.decode())
 
     async def get_by_id_refresh_token(self, id_refresh_token: int) -> Optional[OutRefreshToken]:
         result = await self.db.get(RefreshTokenModel, id_refresh_token)
@@ -234,7 +252,7 @@ class RefreshTokenRepository(AsyncRefreshTokenRepository):
         )
         result = await self.db.execute(stmt)
         result = result.scalars().all()
-        return [await self._to_dto(r) for r in result]
+        return [self._to_dto(r) for r in result]
 
 
 class OauthClientRepository(AsyncOauthClientRepository):
@@ -270,13 +288,13 @@ class OauthClientRepository(AsyncOauthClientRepository):
         timestamp = str(time.time()).encode()
         m.client_secret = hashlib.sha256(timestamp).hexdigest()
 
-        m.created_at = datetime.datetime.now()
+        m.created_at = dt.datetime.now(dt.timezone.utc)
         m.redirect_url = oauth_client_data.redirect_url
         m.grant_types = oauth_client_data.grant_types
         m.is_confidential = oauth_client_data.is_confidential
         m.revoked = False
         m.scopes = oauth_client_data.scopes
-        m.updated_at = datetime.datetime.now()
+        m.updated_at = dt.datetime.now(dt.timezone.utc)
 
         self.db.add(m)
         m.client_secret = timestamp

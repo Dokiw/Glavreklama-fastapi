@@ -23,7 +23,7 @@ class AsyncSessionRepository(Protocol):
     async def refresh_session(self, refresh_data: RefreshSession) -> Optional[OutSession]:
         ...
 
-    async def get_by_id_session(self, id_session: int) -> Optional[OutSession]:
+    async def get_by_id_session_refresh(self, id_session: int) -> Optional[OutSession]:
         ...
 
     async def get_by_id_user_session(self, id_user: int) -> Optional[OutSession]:
