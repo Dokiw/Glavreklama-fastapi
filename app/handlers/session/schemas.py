@@ -149,7 +149,6 @@ class UpdateOauthClient(BaseModel):
 
 
 class CheckOauthClient(BaseModel):
-    id: int = Field(..., alias="Id")
     client_id: str = Field(..., alias="ClientId")
     client_secret: Optional[str] = Field(None, alias="ClientSecret")
     grant_types: Optional[str] = Field(None, alias="GrantType")

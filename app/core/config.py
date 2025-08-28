@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
     DB_NAME: str
+    BOT_TOKEN: str
 
     class Config:
         env_file = ENV_PATH  # чтобы pydantic тоже читал из .env

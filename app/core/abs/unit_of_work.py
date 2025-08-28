@@ -6,6 +6,7 @@ from typing import Optional
 from app.handlers.auth.interfaces import AsyncUserRepository, AsyncRoleRepository
 from app.handlers.session.interfaces import AsyncSessionRepository, AsyncRefreshTokenRepository, AsyncOauthClientRepository
 
+from app.handlers.providers.interfaces import AsyncProviderRepository
 
 class IUnitOfWorkSession(AbstractAsyncContextManager, ABC):
     sessions: AsyncSessionRepository
@@ -47,6 +48,22 @@ class IUnitOfWorkAuth(AbstractAsyncContextManager, ABC):
     @property
     @abstractmethod
     def role(self) -> "AsyncRoleRepository":
+        pass
+
+    @abstractmethod
+    async def commit(self):
+        pass
+
+    @abstractmethod
+    async def rollback(self):
+        pass
+
+class IUnitOfWorkProvider(AbstractAsyncContextManager, ABC):
+    Provider: AsyncProviderRepository
+
+    @property
+    @abstractmethod
+    def provider(self) -> "AsyncProviderRepository":
         pass
 
     @abstractmethod

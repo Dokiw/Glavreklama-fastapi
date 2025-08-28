@@ -44,6 +44,13 @@ class User(Base):
     role: Mapped["Role"] = relationship("Role", back_populates="users")
     sessions: Mapped[List["Session"]] = relationship("Session", back_populates="user", cascade="all, delete-orphan")
 
+    # NEW: провайдеры (telegram, google, ...)
+    providers: Mapped[List["UserProviders"]] = relationship(
+        "UserProviders",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
     @property
     def password(self) -> None:
         raise AttributeError("Password is write-only")

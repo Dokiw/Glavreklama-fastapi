@@ -66,6 +66,9 @@ class AsyncOauthClientRepository(Protocol):
     async def get_by_id_oauth_client(self, id_oauth_client: int) -> Optional[OutOauthClient]:
         ...
 
+    async def get_by_client_id_oauth(self,client_id: str) -> Optional[OutOauthClient]:
+        ...
+
 
 class AsyncSessionService(Protocol):
 

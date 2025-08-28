@@ -54,6 +54,16 @@ class Session(Base):
         passive_deletes=True,
     )
 
+    provider_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("user_providers.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    provider: Mapped[Optional["UserProviders"]] = relationship(
+        "UserProviders",
+        back_populates="sessions"
+    )
+
     client: Mapped[Optional["OAuthClient"]] = relationship("OAuthClient",back_populates="sessions")
 
     # Исправляем индекс - должен быть для user_id
@@ -61,6 +71,7 @@ class Session(Base):
         Index('sessions_user_id_is_active_idx', 'user_id', 'is_active'),
         Index('sessions_client_id_index', 'client_id'),
     )
+
 
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"

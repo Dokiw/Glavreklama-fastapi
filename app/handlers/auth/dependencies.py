@@ -9,6 +9,7 @@ from app.handlers.auth.UOW import SqlAlchemyUnitOfWork, IUnitOfWorkAuth
 from app.handlers.session.dependencies import SessionServiceDep  # <- твой сервис сессий
 from app.handlers.session.service import AsyncSessionService  # <- интерфейс/сервис сессий
 from fastapi import Depends
+from app.handlers.providers.dependencies import ProviderUserServiceDep
 
 
 # фабрика UoW
@@ -20,17 +21,19 @@ async def get_uow(db: AsyncSession = Depends(get_db)) -> AsyncGenerator[IUnitOfW
 
 # фабрика сервиса Auth с передачей SessionService
 def get_auth_service(
-    session_service: SessionServiceDep,
-    uow: IUnitOfWorkAuth = Depends(get_uow),
+        session_service: SessionServiceDep,
+        provide_user: ProviderUserServiceDep,
+        uow: IUnitOfWorkAuth = Depends(get_uow),
 ) -> SqlAlchemyAuth:
-    return SqlAlchemyAuth(uow, session_service)
+    return SqlAlchemyAuth(uow, session_service, provide_user)
+
 
 async def get_auth_service_dep(
-    session_service: SessionServiceDep,
-    uow: IUnitOfWorkAuth = Depends(get_uow),
+        session_service: SessionServiceDep,
+        provide_user: ProviderUserServiceDep,
+        uow: IUnitOfWorkAuth = Depends(get_uow),
 ) -> SqlAlchemyAuth:
-    return SqlAlchemyAuth(uow, session_service)
-
+    return SqlAlchemyAuth(uow, session_service, provide_user)
 
 
 # alias для роутов

@@ -454,19 +454,13 @@ class SqlAlchemyServiceOauthClient(AsyncOauthClientService):
     async def check_oauth_client(self, check_data: CheckOauthClient) -> Optional[OutOauthClient]:
         try:
             async with self.uow:
-                client_data: Optional[OutOauthClient] = await self.uow.oauth_clients.get_by_id_oauth_client(
-                    check_data.id)
+                client_data: Optional[OutOauthClient] = await self.uow.oauth_clients.get_by_client_id_oauth(
+                    check_data.client_id)
 
                 if client_data is None:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail="Ошибка целостности данных"
-                    )
-
-                if client_data.client_id != check_data.client_id:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Неверно переданы данные"
                     )
 
                 if client_data.is_confidential is not None and client_data.is_confidential != check_data.is_confidential:
