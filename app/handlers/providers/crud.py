@@ -19,8 +19,8 @@ class ProvideRepository(AsyncProviderRepository):
         if isinstance(m, type):
             raise TypeError(f"_to_dto получил класс {m!r}, ожидается экземпляр User")
         return ProviderOut(
-            provider=m.id,
-            provider_user_id=m.user_id,
+            provider=m.provider,
+            provider_user_id=m.provider_user_id,
             username=m.username,
             first_name=m.first_name,
             last_name=m.last_name,
@@ -34,6 +34,7 @@ class ProvideRepository(AsyncProviderRepository):
         m = UserProviders()
         m.provider = created_data.provider
         m.provider_user_id = created_data.provider_user_id
+        m.user_id = created_data.user_id
         m.username = created_data.username
         m.first_name = created_data.first_name
         m.last_name = created_data.last_name

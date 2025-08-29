@@ -14,6 +14,7 @@ class ProviderRegisterRequest(BaseModel):
     photo_url: Optional[str]
     is_premium: Optional[bool]
     auth_date: Optional[datetime]
+    user_id: int
 
 
 class ProviderLoginRequest(BaseModel):

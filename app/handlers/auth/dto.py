@@ -10,6 +10,8 @@ class UserAuthData:
     first_name: Optional[str] = None
     last_name: Optional[str] = None
 
-    def verify_password(self, plaintext: str) -> bool:
+    def verify_password(self, plaintext: str) -> Optional[bool]:
+        if not self.pass_hash:
+            return None  # если хеша нет, возвращаем None
         from passlib.hash import bcrypt
         return bcrypt.verify(plaintext, self.pass_hash)

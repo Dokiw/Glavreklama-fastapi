@@ -33,6 +33,9 @@ class AsyncUserRepository(Protocol):
     async def create_user(self, user_in: UserCreate) -> OutUser:
         ...
 
+    async def create_user_provide(self, user_in: UserCreateProvide) -> OutUser:
+        ...
+
     async def list_users(self, limit: int = 100, offset: int = 0) -> List[OutUser]:
         ...
 
@@ -61,6 +64,6 @@ class AsyncAuthService(Protocol):
             Optional)[AuthResponseProvide]:
         ...
 
-    async def register_from_provider_or_get(self, init_data: Dict[str, Any], ip: str, user_agent: str) -> (
+    async def register_from_provider_or_get(self, init_data: str, ip: str, user_agent: str) -> (
             Optional)[AuthResponseProvide]:
         ...

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import (
     BigInteger,
@@ -60,7 +60,9 @@ class User(Base):
         """Хэшируем пароль при установке через property."""
         self.pass_hash = bcrypt.hash(plaintext)
 
-    def verify_password(self, plaintext: str) -> bool:
+    def verify_password(self, plaintext: str) -> Optional[bool]:
+        if not self.pass_hash:
+            return None
         return bcrypt.verify(plaintext, self.pass_hash)
 
     async def to_dict(self) -> dict:

@@ -3,22 +3,17 @@ import datetime
 import hashlib
 from datetime import time
 import datetime as dt
-from typing import Optional, List, cast
-
-import hmac, logging
+from typing import Optional, List
 
 
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 import ipaddress
-import asyncpg
 
 from app.core.abs.unit_of_work import IUnitOfWorkSession
-from app.models.sessions.models import Session as SessionModel, RefreshToken as RefreshTokenModel, \
-    OAuthClient as OAuthClientModel
+from app.models.sessions.models import  RefreshToken as RefreshTokenModel
 
-from app.handlers.session.interfaces import AsyncSessionRepository, AsyncRefreshTokenRepository, \
-    AsyncOauthClientRepository, AsyncRefreshTokenService, AsyncOauthClientService, AsyncSessionService
+from app.handlers.session.interfaces import  AsyncRefreshTokenService, AsyncOauthClientService, AsyncSessionService
 from app.handlers.session.schemas import OpenSession, OutSession, CheckOauthClient, CreateOauthClient, OutOauthClient, \
     CheckSessionAccessToken, CheckSessionRefreshToken, OutRefreshToken, UpdateOauthClient, CreateRefreshToken, \
     UpdateRefreshToken, RefreshSession, LogoutSession

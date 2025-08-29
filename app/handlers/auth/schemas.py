@@ -38,6 +38,8 @@ class LogInUser(BaseModel):
     class Config:
         validate_by_name = True
 
+class InitDataRequest(BaseModel):
+    init_data: str
 
 class LogOutUser(BaseModel):
     user_id: int = Field(..., alias="idUser")

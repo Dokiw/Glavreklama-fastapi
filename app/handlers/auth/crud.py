@@ -1,5 +1,5 @@
 from app.handlers.auth.dto import UserAuthData
-from app.handlers.auth.schemas import OutUser, UserCreate, RoleUser
+from app.handlers.auth.schemas import OutUser, UserCreate, RoleUser, UserCreateProvide
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.handlers.auth.interfaces import AsyncUserRepository, AsyncRoleRepository
 from sqlalchemy import select
@@ -31,6 +31,16 @@ class UserRepository(AsyncUserRepository):
         m = UserModel()
         m.user_name = user_in.user_name
         m.password = user_in.password or None
+        m.email = user_in.email or None
+        m.first_name = user_in.first_name or None
+        m.last_name = user_in.last_name or None
+        self.db.add(m)
+        await self.db.flush()
+        return self._to_dto(m)
+
+    async def create_user_provide(self, user_in: UserCreateProvide) -> OutUser:
+        m = UserModel()
+        m.user_name = user_in.user_name
         m.email = user_in.email or None
         m.first_name = user_in.first_name or None
         m.last_name = user_in.last_name or None

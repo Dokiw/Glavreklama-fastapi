@@ -1,11 +1,13 @@
 from typing import Dict, Any
 
-from fastapi import APIRouter, HTTPException, Depends, Header, Request, Body
+from fastapi import APIRouter, HTTPException, Depends, Header, Request, Body,Form
 
-from app.handlers.auth.schemas import LogInUser, UserCreate, LogOutUser, AuthResponse, RoleUser
+from app.core.config import settings
+from app.handlers.auth.schemas import LogInUser, UserCreate, LogOutUser, AuthResponse, RoleUser, InitDataRequest
 from app.handlers.auth.dependencies import AuthServiceDep, get_auth_service_dep, get_auth_service
 from app.handlers.auth.service import SqlAlchemyAuth
 from app.handlers.providers.schemas import ProviderLoginRequest
+from app.method.initdatatelegram import check_telegram_init_data
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -64,22 +66,15 @@ async def register(request: Request, auth_service: AuthServiceDep, login_data: P
     return await auth_service.login_from_provider(user_data=login_data, ip=ip, user_agent=user_agent)
 
 
-@router.post("/register_provider", response_model=Dict[str, Any])
+@router.post("/register_provider")
 async def register_from_provider_or_get(
-        request: Request,
-        auth_service: AuthServiceDep,
+    request: Request,
+    auth_service: AuthServiceDep,
+    payload: str = Form(...)
 ):
-    raw_body = await request.body()  # <- оригинальная байтовая строка, важна для диагностики
-    try:
-        parsed = await request.json()
-    except Exception:
-        parsed = None
-
-    if parsed is None:
-        return {"detail": "Не удалось распарсить JSON тела", "raw_body": raw_body.decode("utf-8", errors="replace")}
-
+    init_data_str = payload
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
-    return await auth_service.register_from_provider_or_get(parsed, ip, user_agent)
+    return await auth_service.register_from_provider_or_get(init_data_str, ip, user_agent)

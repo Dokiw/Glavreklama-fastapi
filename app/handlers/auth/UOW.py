@@ -1,4 +1,4 @@
-from typing import Optional, AsyncGenerator
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.abs.unit_of_work import IUnitOfWorkAuth
 from app.handlers.auth.crud import UserRepository, RoleRepository

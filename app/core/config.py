@@ -17,6 +17,7 @@ if load_dotenv(dotenv_path=ENV_PATH):
 else:
     logger.warning(f".env файл НЕ найден по пути: {ENV_PATH}")
 
+
 class Settings(BaseSettings):
     DB_USER: str
     DB_PASSWORD: str
@@ -27,6 +28,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ENV_PATH  # чтобы pydantic тоже читал из .env
+
 
 settings = Settings()
 

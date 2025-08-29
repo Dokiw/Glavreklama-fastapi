@@ -7,15 +7,19 @@ from sqlalchemy.exc import IntegrityError
 import asyncpg
 
 from app.core.abs.unit_of_work import IUnitOfWorkAuth
+from app.core.config import settings
 from app.handlers.auth.dto import UserAuthData
-from app.handlers.auth.interfaces import AsyncAuthService, AsyncUserRepository, AsyncRoleRepository
+from app.handlers.auth.interfaces import AsyncAuthService
 from app.handlers.auth.schemas import LogInUser, RoleUser, AuthResponse, OutUser, Token, UserCreate, UserCreateProvide, \
     AuthResponseProvide
 from app.handlers.providers.schemas import ProviderRegisterRequest, ProviderLoginRequest, ProviderOut
 from app.handlers.session.interfaces import AsyncSessionService
 from app.handlers.session.schemas import OpenSession, CheckSessionAccessToken, OutSession
 from app.handlers.providers.interfaces import AsyncProvidersService
-from app.method.initdatatelegram import validate_init_data_debug
+from app.method.initdatatelegram import check_telegram_init_data
+
+
+#from app.method.initdatatelegram import verify_telegram_init_data
 
 
 class SqlAlchemyAuth(AsyncAuthService):
@@ -226,21 +230,21 @@ class SqlAlchemyAuth(AsyncAuthService):
 
     async def register_from_provider_or_get(
             self,
-            init_data: Dict[str, Any],
+            init_data: str,
             ip: str,
             user_agent: str,
     ) -> Optional[AuthResponseProvide]:
         try:
             async with self.uow:  # единая транзакция для всех операций
-                init_data = await validate_init_data_debug(init_data)
+                init_data = await check_telegram_init_data(init_data, settings.BOT_TOKEN)
 
                 # 2) parse user JSON
                 try:
-                    user_data = json.loads(init_data["user"])
+                    user_data = init_data["user"]
                 except (json.JSONDecodeError, TypeError, KeyError):
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Некорректный формат данных пользователя {init_data}"
+                        detail=f"Некорректный формат данных пользователя {init_data} and {settings.BOT_TOKEN}"
                     )
 
                 provider = "telegram"
@@ -274,8 +278,9 @@ class SqlAlchemyAuth(AsyncAuthService):
                         password=None
                     )
 
+
                     # 6) создаём локального пользователя (flush внутри create_user должен дать id)
-                    user: OutUser = await self.uow.user_repo.create_user(user_create_payload)
+                    user: OutUser = await self.uow.user_repo.create_user_provide(user_create_payload)
 
                     # 7) теперь создаём провайдера, привязанного к user.id
                     create_provider_payload = ProviderRegisterRequest(
@@ -286,7 +291,7 @@ class SqlAlchemyAuth(AsyncAuthService):
                         last_name=user_data.get("last_name"),
                         photo_url=user_data.get("photo_url"),
                         is_premium=user_data.get("is_premium"),
-                        auth_date=datetime.fromtimestamp(int(init_data["auth_date"]), tz=timezone.utc),
+                        auth_date=init_data["auth_date"].replace(tzinfo=None),
                         user_id=user.id,  # важно: привязываем к созданному пользователю
                     )
 
