@@ -31,6 +31,12 @@ class SqlAlchemyServiceSession(AsyncSessionService):
         try:
             async with self.uow:
 
+                session_data_: Optional[OutSession] = await self.uow.sessions.get_by_id_user_session(session_data.user_id)
+
+                if session_data_ is not None:
+                    return session_data_
+
+
                 # Создаем сессию
                 session = await self.uow.sessions.open_session(session_data)
 

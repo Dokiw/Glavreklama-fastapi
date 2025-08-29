@@ -143,11 +143,13 @@ class SessionRepository(AsyncSessionRepository):
         return await self._to_dto(result) if result else None
 
     async def get_by_id_user_session(self, user_id: int) -> Optional[OutSession]:
-        q = select(SessionModel).where(SessionModel.user_id == user_id).order_by(SessionModel.created_at.desc()).limit(
-            1)
+        q = (select(SessionModel)
+        .where((SessionModel.user_id == user_id) & (SessionModel.is_active == True))
+        .order_by(SessionModel.created_at.desc()).limit(
+            1))
         result = await self.db.execute(q)
         result = result.scalars().first()
-        return await self._to_dto(result)
+        return await self._to_dto(result) if result else None
 
     async def get_by_id_client_session(self, client_id: int) -> list[OutSession]:
         q = select(SessionModel).where(SessionModel.client_id == client_id)
