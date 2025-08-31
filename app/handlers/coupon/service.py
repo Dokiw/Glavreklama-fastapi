@@ -22,7 +22,7 @@ class SqlAlchemyCoupon(AsyncCouponService):
         try:
             async with self.uow:
 
-                await self.session_service.validate_access_token_session(CheckSessionAccessToken)
+                await self.session_service.validate_access_token_session(check_data)
 
                 gen = PromoGenerator()
                 res = await gen.generate()
@@ -32,7 +32,7 @@ class SqlAlchemyCoupon(AsyncCouponService):
                 init_data = CreateCoupon(
                     user_id=coupon_data.user_id,
                     name=coupon_data.name,
-                    description=coupon_data.description,
+                    description=str(res['value']),
                     promo_count=is_fixed,
                     status=True,
                     token_hash=res['code'],
@@ -60,7 +60,7 @@ class SqlAlchemyCoupon(AsyncCouponService):
     async def used_coupon(self, user_id: int, token: str, check_data: CheckSessionAccessToken) -> Optional[OutCoupon]:
         try:
             async with self.uow:
-                await self.session_service.validate_access_token_session(CheckSessionAccessToken)
+                await self.session_service.validate_access_token_session(check_data)
 
                 result: Optional[OutCoupon] = await self.uow.coupon_repo.used_coupon(user_id, hashlib.sha256(token.encode()).hexdigest())
 
@@ -78,7 +78,7 @@ class SqlAlchemyCoupon(AsyncCouponService):
     async def get_by_user_id(self, user_id: int, check_data: CheckSessionAccessToken) -> Optional[List[OutCoupon]]:
         try:
             async with self.uow:
-                await self.session_service.validate_access_token_session(CheckSessionAccessToken)
+                await self.session_service.validate_access_token_session(check_data)
                 results: List[Optional[OutCoupon]] = await self.uow.coupon_repo.get_by_user_id(user_id)
                 if results is None:
                     raise HTTPException(
@@ -100,7 +100,7 @@ class SqlAlchemyCoupon(AsyncCouponService):
     async def get_info_by_coupon_id(self, id: int, check_data: CheckSessionAccessToken) -> Optional[OutCoupon]:
         try:
             async with self.uow:
-                await self.session_service.validate_access_token_session(CheckSessionAccessToken)
+                await self.session_service.validate_access_token_session(check_data)
 
                 result: Optional[OutCoupon] = await self.uow.coupon_repo.get_info_by_coupon_id(id)
 
@@ -118,7 +118,7 @@ class SqlAlchemyCoupon(AsyncCouponService):
     async def get_by_token_hash(self, token: str, check_data: CheckSessionAccessToken) -> Optional[OutCoupon]:
         try:
             async with self.uow:
-                await self.session_service.validate_access_token_session(CheckSessionAccessToken)
+                await self.session_service.validate_access_token_session(check_data)
 
                 result: Optional[OutCoupon] = await self.uow.coupon_repo.get_by_token_hash(token)
 

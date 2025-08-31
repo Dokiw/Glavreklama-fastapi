@@ -81,11 +81,9 @@ class IUnitOfWorkProvider(AbstractAsyncContextManager, ABC):
 
 
 class IUnitOfWorkCoupon(AbstractAsyncContextManager, ABC):
-    Coupon: AsyncCouponRepository
-
     @property
     @abstractmethod
-    def coupon(self) -> "AsyncCouponRepository":
+    def coupon_repo(self) -> "AsyncCouponRepository":
         pass
 
     @abstractmethod

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException, Depends, Header, Request, Body, Form
 
 from app.handlers.coupon.dependencies import couponServiceDep
@@ -13,9 +15,10 @@ async def hub():
     return HTTPException(200, 'Status - True')
 
 
-@router.post("/create_coupon", response_model=OutCoupon)
+@router.post("/create_coupon", response_model=Optional[OutCoupon])
 async def create_coupon(
-        coupon_data: CreateCouponService,
+        description: str,
+        name: str,
         user_id: int,
         request: Request,
         coupon_service: couponServiceDep,
@@ -25,17 +28,24 @@ async def create_coupon(
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
-    CheckSessionAccessToken(
+    csat = CheckSessionAccessToken(
         user_id=user_id,
         ip_address=ip,
         user_agent=user_agent,
         access_token=access_token
     )
 
-    return await coupon_service.create_coupon(coupon_data=coupon_data, check_data=CheckSessionAccessToken)
+    ccs = CreateCouponService(
+        user_id=user_id,
+        description=description,
+        name=name,
+        status=None
+    )
+
+    return await coupon_service.create_coupon(coupon_data=ccs, check_data=csat)
 
 
-@router.post("/used_coupon", response_model=OutCoupon)
+@router.post("/used_coupon", response_model=Optional[OutCoupon])
 async def used_coupon(
         token: str,
         user_id: int,
@@ -47,17 +57,17 @@ async def used_coupon(
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
-    CheckSessionAccessToken(
+    csat = CheckSessionAccessToken(
         user_id=user_id,
         ip_address=ip,
         user_agent=user_agent,
         access_token=access_token
     )
 
-    return await coupon_service.used_coupon(user_id=user_id, token=token, check_data=CheckSessionAccessToken)
+    return await coupon_service.used_coupon(user_id=user_id, token=token, check_data=csat)
 
 
-@router.post("/get_by_user_id", response_model=OutCoupon)
+@router.post("/get_by_user_id", response_model=Optional[OutCoupon])
 async def get_by_user_id(
         user_id: int,
         request: Request,
@@ -68,17 +78,17 @@ async def get_by_user_id(
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
-    CheckSessionAccessToken(
+    csat = CheckSessionAccessToken(
         user_id=user_id,
         ip_address=ip,
         user_agent=user_agent,
         access_token=access_token
     )
 
-    return await coupon_service.get_by_user_id(user_id=user_id, check_data=CheckSessionAccessToken)
+    return await coupon_service.get_by_user_id(user_id=user_id, check_data=csat)
 
 
-@router.post("/get_info_by_coupon_id", response_model=OutCoupon)
+@router.post("/get_info_by_coupon_id", response_model=Optional[OutCoupon])
 async def get_info_by_coupon_id(
         id: int,
         user_id: int,
@@ -90,16 +100,17 @@ async def get_info_by_coupon_id(
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
-    CheckSessionAccessToken(
+    csat = CheckSessionAccessToken(
         user_id=user_id,
         ip_address=ip,
         user_agent=user_agent,
         access_token=access_token
     )
 
-    return await coupon_service.get_info_by_coupon_id(id=id, check_data=CheckSessionAccessToken)
+    return await coupon_service.get_info_by_coupon_id(id=id, check_data=csat)
 
-@router.post("/get_by_token_hash", response_model=OutCoupon)
+
+@router.post("/get_by_token_hash", response_model=Optional[OutCoupon])
 async def get_by_token_hash(
         token: str,
         user_id: int,
@@ -111,13 +122,11 @@ async def get_by_token_hash(
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
-    CheckSessionAccessToken(
+    csat = CheckSessionAccessToken(
         user_id=user_id,
         ip_address=ip,
         user_agent=user_agent,
         access_token=access_token
     )
 
-    return await coupon_service.get_by_token_hash(token=token, check_data=CheckSessionAccessToken)
-
-
+    return await coupon_service.get_by_token_hash(token=token, check_data=csat)

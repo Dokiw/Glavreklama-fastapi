@@ -1,5 +1,6 @@
 import hashlib
-from datetime import timedelta as td, datetime as dt
+from datetime import datetime as dt, timezone
+
 
 import time
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,19 +28,19 @@ class CouponRepository(AsyncCouponRepository):
         return OutCoupon(
             id=m.id,
             name=m.name,
+            user_id=m.user_id,
             description=m.description,
             promo_count=m.promo_count,
             status=m.status,
             token_hash=m.token_hash,
-            created_at=m.created_at,
-            is_active=m.is_active,
+            created_at=m.created_at
         )
 
     async def create_coupon(self, coupon_data: CreateCoupon) -> Optional[OutCoupon]:
         m = CouponUser()
-        m.created_at = dt.now(td.utc)
+        m.created_at = dt.now(timezone.utc)
 
-        m.token_hash = m.token_hash
+        m.token_hash = coupon_data.token_hash
 
         m.is_active = True
         m.status = coupon_data.status
@@ -63,7 +64,7 @@ class CouponRepository(AsyncCouponRepository):
 
     async def get_info_by_coupon_id(self, id: int) -> Optional[OutCoupon]:
         result = await self.db.get(CouponUser, id)
-        return self._to_dto(result) if result else None
+        return await self._to_dto(result) if result else None
 
     async def get_by_token_hash(self, token: str) -> Optional[OutCoupon]:
         q = (
@@ -76,7 +77,7 @@ class CouponRepository(AsyncCouponRepository):
         )
         result = await self.db.execute(q)
         result = result.scalars().first()
-        return self._to_dto(result) if result else None
+        return await self._to_dto(result) if result else None
 
     async def used_coupon(self, user_id: int, token: str) -> Optional[OutCoupon]:
         stmt = (
@@ -91,4 +92,4 @@ class CouponRepository(AsyncCouponRepository):
         result = await self.db.execute(stmt)
         result = result.scalar_one_or_none()
 
-        return self._to_dto(result) if result else None
+        return await self._to_dto(result) if result else None

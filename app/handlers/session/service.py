@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import hashlib
+import logging
 from datetime import time
 import datetime as dt
 from typing import Optional, List
@@ -31,14 +32,11 @@ class SqlAlchemyServiceSession(AsyncSessionService):
         try:
             async with self.uow:
 
-                session_data_: Optional[OutSession] = await self.uow.sessions.get_by_id_user_session(session_data.user_id)
+                session: Optional[OutSession] = await self.uow.sessions.get_by_id_user_session(session_data.user_id)
 
-                if session_data_ is not None:
-                    return session_data_
-
-
-                # Создаем сессию
-                session = await self.uow.sessions.open_session(session_data)
+                if session is None:
+                    # Создаем сессию
+                    session = await self.uow.sessions.open_session(session_data)
 
                 # Создаем refresh token
 
@@ -151,9 +149,11 @@ class SqlAlchemyServiceSession(AsyncSessionService):
             # просто пробрасываем дальше, чтобы не превращать в 500
             raise
         except Exception as e:
+            logging.exception("validate_access_token_session failed")
+            # или для краткого вывода
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Внутренняя ошибка сервера: {str(e)} -- тут 2"
+                detail=f"Внутренняя ошибка сервера: {type(e).__name__}: {e!r} -- тут 2 {check_access_token_data.access_token}"
             )
 
         return session
