@@ -5,7 +5,7 @@ import traceback
 from pathlib import Path
 from fastapi import FastAPI
 
-
+from fastapi.middleware.cors import CORSMiddleware
 import importlib
 import pkgutil
 from contextlib import asynccontextmanager
@@ -25,7 +25,26 @@ async def lifespan(app: FastAPI):
     # можно добавить, например, закрытие соединений с БД
 
 
+
 app = FastAPI(lifespan=lifespan)
+
+origins = [
+    "http://localhost",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:8080",
+    "https://glavprojects.ru",
+    "https://catcheggsapp.web.app",
+]
+
+# Подключаем CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def import_all_routes(app: FastAPI, package_name: str):
     logger = __import__("logging").getLogger("uvicorn")
@@ -91,4 +110,4 @@ async def root()    :
 if __name__ == "__main__":
 
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    uvicorn.run(app, host="127.0.0.1", port=9787)

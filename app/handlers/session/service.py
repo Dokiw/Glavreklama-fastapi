@@ -100,7 +100,7 @@ class SqlAlchemyServiceSession(AsyncSessionService):
         OutSession]:
         try:
             async with self.uow:
-                session = await self.uow.sessions.get_by_id_session_refresh(check_access_token_data.id)
+                session = await self.uow.sessions.get_by_access_token_session(check_access_token_data.access_token)
 
                 if session is None:
                     raise HTTPException(
@@ -128,24 +128,24 @@ class SqlAlchemyServiceSession(AsyncSessionService):
                 if session.user_agent != check_access_token_data.user_agent:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Ошибка целостности данных"
+                        detail=f"Ошибка целостности данных"
                     )
 
-                timestamp = str(time()).encode()
-
-                session.access_token = hashlib.sha256(timestamp).hexdigest()
-
-                session_data = RefreshSession(
-                    **session.model_dump(exclude={
-                        "refresh_token", "is_active", "logged_out_at",
-                        "created_at", "last_used_at"
-                    }),
-                    refresh_token=session.refresh_token,  # если есть
-                    id_address=session.ip_address,  # мэппинг IP
-                )
-
-                session = await self.uow.sessions.refresh_session(session_data)
-
+                # timestamp = str(time()).encode()
+                #
+                # session.access_token = hashlib.sha256(timestamp).hexdigest()
+                #
+                # session_data = RefreshSession(
+                #     **session.model_dump(exclude={
+                #         "refresh_token", "is_active", "logged_out_at",
+                #         "created_at", "last_used_at"
+                #     }),
+                #     refresh_token=session.refresh_token,  # если есть
+                #     id_address=session.ip_address,  # мэппинг IP
+                # )
+                #
+                # session = await self.uow.sessions.refresh_session(session_data)
+                #
                 await self.uow.commit()
         except HTTPException:
             # просто пробрасываем дальше, чтобы не превращать в 500

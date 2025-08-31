@@ -35,7 +35,6 @@ class RefreshSession(BaseModel):
 
 
 class CheckSessionAccessToken(BaseModel):
-    id: int = Field(..., alias="Id")
     user_id: int = Field(..., alias="UserId")
     access_token: str = Field(..., alias="AccessToken")
     ip_address: str = Field(..., alias="ipAddress")

@@ -38,8 +38,10 @@ class SqlAlchemyAuth(AsyncAuthService):
         try:
             async with self.uow:
                 session = await self.session_service.get_by_access_token_session(access_token)
+
                 if session is None:
                     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
+
                 session_data = CheckSessionAccessToken(
                     id=session.id,
                     user_id=session.user_id,
@@ -49,6 +51,7 @@ class SqlAlchemyAuth(AsyncAuthService):
                 )
 
                 await self.session_service.validate_access_token_session(session_data)
+
                 role: Optional[RoleUser] = await self.uow.role_repo.get_by_user_id(id_user)
                 if not role:
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")

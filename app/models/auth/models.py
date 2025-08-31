@@ -16,6 +16,8 @@ from datetime import datetime
 from passlib.hash import bcrypt
 
 from app.db.base import Base
+from app.models.coupon import CouponUser
+
 
 class User(Base):
     __tablename__ = "users"
@@ -50,6 +52,8 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+
+    coupons: Mapped[List["CouponUser"]] = relationship("CouponUser", back_populates="user")
 
     @property
     def password(self) -> None:

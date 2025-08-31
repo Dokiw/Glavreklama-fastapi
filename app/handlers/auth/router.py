@@ -7,6 +7,7 @@ from app.handlers.auth.schemas import LogInUser, UserCreate, LogOutUser, AuthRes
 from app.handlers.auth.dependencies import AuthServiceDep, get_auth_service_dep, get_auth_service
 from app.handlers.auth.service import SqlAlchemyAuth
 from app.handlers.providers.schemas import ProviderLoginRequest
+from app.method.get_token import get_token
 from app.method.initdatatelegram import check_telegram_init_data
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -40,7 +41,7 @@ async def register(user_create: UserCreate, request: Request, auth_service: Auth
 
 
 @router.post("/role", response_model=RoleUser)
-async def indicate(user_id: int, request: Request, access_token: str, auth_service: AuthServiceDep):
+async def indicate(auth_service: AuthServiceDep,user_id: int, request: Request, access_token: str = Depends(get_token)):
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -49,8 +50,10 @@ async def indicate(user_id: int, request: Request, access_token: str, auth_servi
 
 
 @router.post("/logout")
-async def logout(id_user: int, request: Request, access_token: str, auth_service: AuthServiceDep):
+async def logout(auth_service: AuthServiceDep,id_user: int, request: Request, access_token: str = Depends(get_token)):
+
     # Получаем IP и User-Agent из запроса
+
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
@@ -66,7 +69,7 @@ async def register(request: Request, auth_service: AuthServiceDep, login_data: P
     return await auth_service.login_from_provider(user_data=login_data, ip=ip, user_agent=user_agent)
 
 
-@router.post("/register_provider")
+@router.post("/register_provider",response_model=AuthResponse)
 async def register_from_provider_or_get(
     request: Request,
     auth_service: AuthServiceDep,

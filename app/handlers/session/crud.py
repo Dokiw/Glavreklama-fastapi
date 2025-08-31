@@ -238,7 +238,7 @@ class RefreshTokenRepository(AsyncRefreshTokenRepository):
         result = await self.db.execute(stmt)
         result = result.scalar_one_or_none()
 
-        return self._to_dto(result, timestamp.decode())
+        return self._to_dto(result, plaintext=timestamp.decode())
 
     async def get_by_id_refresh_token(self, id_refresh_token: int) -> Optional[OutRefreshToken]:
         result = await self.db.get(RefreshTokenModel, id_refresh_token)
