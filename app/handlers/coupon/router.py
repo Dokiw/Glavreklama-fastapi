@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Request, Body, Form
 
@@ -67,7 +67,7 @@ async def used_coupon(
     return await coupon_service.used_coupon(user_id=user_id, token=token, check_data=csat)
 
 
-@router.post("/get_by_user_id", response_model=Optional[OutCoupon])
+@router.post("/get_by_user_id", response_model=Optional[List[OutCoupon]])
 async def get_by_user_id(
         user_id: int,
         request: Request,

@@ -79,12 +79,9 @@ class SqlAlchemyCoupon(AsyncCouponService):
         try:
             async with self.uow:
                 await self.session_service.validate_access_token_session(check_data)
-                results: List[Optional[OutCoupon]] = await self.uow.coupon_repo.get_by_user_id(user_id)
+                results: Optional[List[OutCoupon]] = await self.uow.coupon_repo.get_by_user_id(user_id)
                 if results is None:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Нету данных"
-                    )
+                    return None
                 return [i for i in results]
 
         except HTTPException:
