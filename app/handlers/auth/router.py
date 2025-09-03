@@ -21,6 +21,7 @@ async def hub():
 
 @router.post("/login", response_model=AuthResponse)
 async def login(
+        oauth_client: str,
         log_in_user: LogInUser,
         request: Request,
         auth_service: AuthServiceDep
@@ -29,16 +30,16 @@ async def login(
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
-    return await auth_service.login(log_in_user, ip, user_agent=user_agent)
+    return await auth_service.login(log_in_user, ip, user_agent=user_agent, oauth_client=oauth_client)
 
 
 @router.post("/register", response_model=AuthResponse)
-async def register(user_create: UserCreate, request: Request, auth_service: AuthServiceDep):
+async def register(oauth_client: str, user_create: UserCreate, request: Request, auth_service: AuthServiceDep):
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
-    return await auth_service.register(user_data=user_create, ip=ip, user_agent=user_agent)
+    return await auth_service.register(oauth_client=oauth_client, user_data=user_create, ip=ip, user_agent=user_agent)
 
 
 @router.post("/role", response_model=RoleUser)
@@ -62,23 +63,24 @@ async def logout(auth_service: AuthServiceDep,id_user: int, request: Request, ac
 
 
 @router.post("/login_provider", response_model=AuthResponseProvide)
-async def register(request: Request, auth_service: AuthServiceDep, login_data: ProviderLoginRequest = Body()):
+async def register(oauth_client: str, request: Request, auth_service: AuthServiceDep, login_data: ProviderLoginRequest = Body()):
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
-    return await auth_service.login_from_provider(user_data=login_data, ip=ip, user_agent=user_agent)
+    return await auth_service.login_from_provider(client_id=oauth_client, user_data=login_data, ip=ip, user_agent=user_agent)
 
 
 @router.post("/register_provider",response_model=AuthResponseProvide)
 async def register_from_provider_or_get(
+    oauth_client: str,
     request: Request,
     auth_service: AuthServiceDep,
-    payload: str = Form(...)
+    payload: str = Form(...),
 ):
     init_data_str = payload
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
-    return await auth_service.register_from_provider_or_get(init_data_str, ip, user_agent)
+    return await auth_service.register_from_provider_or_get(init_data_str, ip, user_agent, oauth_client)

@@ -33,6 +33,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:5173",
     "http://127.0.0.1:8080",
+    "http://127.0.0.1:9787",
     "https://glavprojects.ru",
     "https://catcheggsapp.web.app",
 ]

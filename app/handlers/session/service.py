@@ -6,20 +6,17 @@ from datetime import time
 import datetime as dt
 from typing import Optional, List
 
-
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 import ipaddress
 
 from app.core.abs.unit_of_work import IUnitOfWorkSession
-from app.models.sessions.models import  RefreshToken as RefreshTokenModel
+from app.models.sessions.models import RefreshToken as RefreshTokenModel
 
-from app.handlers.session.interfaces import  AsyncRefreshTokenService, AsyncOauthClientService, AsyncSessionService
+from app.handlers.session.interfaces import AsyncRefreshTokenService, AsyncOauthClientService, AsyncSessionService
 from app.handlers.session.schemas import OpenSession, OutSession, CheckOauthClient, CreateOauthClient, OutOauthClient, \
     CheckSessionAccessToken, CheckSessionRefreshToken, OutRefreshToken, UpdateOauthClient, CreateRefreshToken, \
-    UpdateRefreshToken, RefreshSession, LogoutSession
-
-
+    UpdateRefreshToken, RefreshSession, LogoutSession, OpenSessionRepo
 
 
 # todo: заменить генерацию токена на безопасную для продакшена
@@ -28,18 +25,64 @@ class SqlAlchemyServiceSession(AsyncSessionService):
         self.uow = uow
         self.refresh_service = refresh_service
 
+    async def get_oauth_by_client(self, client_id: str) -> Optional[OutSession]:
+        try:
+            async with self.uow:
+                result: Optional[OutSession] = await self.uow.oauth_clients.get_by_client_id_oauth(client_id)
+
+                return result
+        except IntegrityError as e:
+            # Откатываем транзакцию при ошибке целостности
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ошибка целостности данных при создании сессии"
+            )
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
+        except Exception as e:
+            # Откатываем транзакцию при любой другой ошибке
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Внутренняя ошибка сервера: {str(e)}"
+            )
+
     async def open_session(self, session_data: OpenSession) -> OutSession:
         try:
             async with self.uow:
 
-                session: Optional[OutSession] = await self.uow.sessions.get_by_id_user_session(session_data.user_id)
+                # Получаем id_client
+                client_data_oauth: Optional[OutOauthClient] = await self.uow.oauth_clients.get_by_client_id_oauth(
+                    session_data.client_id)
+
+                if client_data_oauth is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Клиента с таким наименованием нету"
+                    )
+
+                session: Optional[OutSession] = await self.uow.sessions.get_by_oauth_client_and_user_id(
+                    id_client=client_data_oauth.id, id_user=session_data.user_id)
 
                 if session is None:
                     # Создаем сессию
-                    session = await self.uow.sessions.open_session(session_data)
+                    session = await self.uow.sessions.open_session(OpenSessionRepo(
+                        user_id=session_data.user_id,
+                        client_id=client_data_oauth.id,
+                        id_address=session_data.id_address,
+                        user_agent=session_data.user_agent,
+                    ))
+
+                if session.client_id != client_data_oauth.client_id:
+                    # создаем новую сессию
+                    session = await self.uow.sessions.open_session(OpenSessionRepo(
+                        user_id=session_data.user_id,
+                        client_id=client_data_oauth.id,
+                        id_address=session_data.id_address,
+                        user_agent=session_data.user_agent,
+                    ))
 
                 # Создаем refresh token
-
                 session_id: int = session.id
                 expires_at = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1)
 
@@ -310,9 +353,9 @@ class SqlAlchemyServiceRefreshToken(AsyncRefreshTokenService):
         try:
             async with self.uow:
                 refresh_data: OutRefreshToken = await self.uow.refresh_tokens.create_refresh_token(CreateRefreshToken(
-                        session_id=session_id,
-                        expires_at=expires_at if expires_at else None
-                    )
+                    session_id=session_id,
+                    expires_at=expires_at if expires_at else None
+                )
                 )
 
                 await self.uow.commit()

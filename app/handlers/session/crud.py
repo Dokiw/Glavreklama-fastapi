@@ -151,6 +151,15 @@ class SessionRepository(AsyncSessionRepository):
         result = result.scalars().first()
         return await self._to_dto(result) if result else None
 
+    async def get_by_oauth_client_and_user_id(self,id_client: int, id_user: int) -> Optional[OutSession]:
+        q = ((select(SessionModel))
+             .where((SessionModel.user_id == id_user) & (SessionModel.is_active == True) &
+                    (SessionModel.id == id_client))
+             .order_by(SessionModel.created_at.desc()).limit(1))
+        result = await self.db.execute(q)
+        result = result.scalars().first()
+        return await self._to_dto(result) if result else None
+
     async def get_by_id_client_session(self, client_id: int) -> list[OutSession]:
         q = select(SessionModel).where(SessionModel.client_id == client_id)
         result = await self.db.execute(q)
@@ -324,15 +333,14 @@ class OauthClientRepository(AsyncOauthClientRepository):
 
     async def get_by_id_oauth_client(self, id_oauth_client: int) -> Optional[OutOauthClient]:
         result = self.db.get(OAuthClientModel, id_oauth_client)
-        return self._to_dto(result) if result else None
+        return await self._to_dto(result) if result else None
 
     async def get_by_client_id_oauth(self, client_id: str) -> Optional[OutOauthClient]:
         stmt = (
             select(OAuthClientModel)
             .where(OAuthClientModel.client_id == client_id)
-            .order_by(RefreshTokenModel.created_at.desc())
-
+            .limit(1)
         )
         result = await self.db.execute(stmt)
-        result = result.scalars().all()
-        return self._to_dto(result) if result else None
+        model = result.scalars().first()  # вернёт один объект или None
+        return await self._to_dto(model) if model else None

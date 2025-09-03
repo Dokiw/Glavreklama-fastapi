@@ -55,7 +55,7 @@ class CouponRepository(AsyncCouponRepository):
         return await self._to_dto(m) if m else None
 
     async def get_by_user_id(self, user_id: int) -> Optional[List[OutCoupon]]:
-        q = select(CouponUser).where(CouponUser.user_id == user_id)
+        q = select(CouponUser).where(CouponUser.user_id == user_id).order_by(CouponUser.created_at.desc()).limit(5)
         result = await self.db.execute(q)
         sessions = result.scalars().all()
         if sessions is None:

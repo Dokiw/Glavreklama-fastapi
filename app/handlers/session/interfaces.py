@@ -7,14 +7,14 @@ from app.handlers.session.schemas import (
     OutRefreshToken,
     RefreshSession,
     LogoutSession, CreateRefreshToken, UpdateRefreshToken, CreateOauthClient, OutOauthClient, UpdateOauthClient,
-    CheckOauthClient
+    CheckOauthClient, OpenSessionRepo
 )
 import datetime
 
 
 class AsyncSessionRepository(Protocol):
 
-    async def open_session(self, session_data: OpenSession) -> OutSession:
+    async def open_session(self, session_data: OpenSessionRepo) -> OutSession:
         ...
 
     async def close_session(self, session_id: int) -> None:
@@ -37,6 +37,9 @@ class AsyncSessionRepository(Protocol):
 
     async def deactivate_by_token_ip_ua(self, access_token: str, ip: str, user_agent: str,
                                         id_user: int | None = None) -> Optional[OutSession]:
+        ...
+
+    async def get_by_oauth_client_and_user_id(self, id_client: int, id_user: int) -> Optional[OutSession]:
         ...
 
 
@@ -66,11 +69,14 @@ class AsyncOauthClientRepository(Protocol):
     async def get_by_id_oauth_client(self, id_oauth_client: int) -> Optional[OutOauthClient]:
         ...
 
-    async def get_by_client_id_oauth(self,client_id: str) -> Optional[OutOauthClient]:
+    async def get_by_client_id_oauth(self, client_id: str) -> Optional[OutOauthClient]:
         ...
 
 
 class AsyncSessionService(Protocol):
+
+    async def get_oauth_by_client(self, client_id: str) -> OutSession:
+        ...
 
     async def open_session(self, session_data: OpenSession) -> OutSession:
         ...

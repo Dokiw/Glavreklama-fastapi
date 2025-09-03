@@ -51,19 +51,19 @@ class AsyncAuthService(Protocol):
         ...
 
     async def login(self, login_data: LogInUser, ip: str,
-                    user_agent: str) -> AuthResponse:  # например возвращает токен + user
+                    user_agent: str, oauth_client: str) -> AuthResponse:  # например возвращает токен + user
         ...
 
-    async def logout(self, id_user: int, ip: str, user_agent: str, access_token: str) -> None:
+    async def logout(self, id_user: int, ip: str, user_agent: str, access_token: str, oauth_client: str) -> None:
         ...
 
-    async def register(self, user_data: UserCreate, ip: str, user_agent: str) -> Optional[OutUser]:
+    async def register(self, user_data: UserCreate, ip: str, user_agent: str, oauth_client: str) -> Optional[OutUser]:
         ...
 
-    async def login_from_provider(self, user_data: ProviderLoginRequest, ip: str, user_agent: str) -> (
+    async def login_from_provider(self, client_id: str, user_data: ProviderLoginRequest, ip: str, user_agent: str,oauth_client: str) -> (
             Optional)[AuthResponseProvide]:
         ...
 
-    async def register_from_provider_or_get(self, init_data: str, ip: str, user_agent: str) -> (
+    async def register_from_provider_or_get(self, init_data: str, ip: str, user_agent: str,oauth_client: str) -> (
             Optional)[AuthResponseProvide]:
         ...

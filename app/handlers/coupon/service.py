@@ -1,7 +1,7 @@
 import hashlib
 from typing import Optional, List
 import time
-
+from datetime import datetime, timedelta, UTC
 from app.handlers.coupon.interfaces import AsyncCouponService
 from app.handlers.coupon.UOW import SqlAlchemyUnitOfWork
 from app.handlers.coupon.schemas import CreateCoupon, OutCoupon, CreateCouponService
@@ -18,11 +18,17 @@ class SqlAlchemyCoupon(AsyncCouponService):
         self.uow = uow
         self.session_service = session_service
 
-    async def create_coupon(self, coupon_data: CreateCouponService, check_data: CheckSessionAccessToken) -> Optional[OutCoupon]:
+    async def create_coupon(self, coupon_data: CreateCouponService, check_data: CheckSessionAccessToken) -> Optional[
+                                                                                                                OutCoupon] | datetime:
         try:
             async with self.uow:
 
                 await self.session_service.validate_access_token_session(check_data)
+
+                valid = await self.uow.coupon_repo.get_by_user_id(user_id=coupon_data.user_id)
+
+                if valid and valid[0].created_at > (datetime.now(UTC) - timedelta(weeks=1)):
+                    return valid[0].created_at
 
                 gen = PromoGenerator()
                 res = await gen.generate()
@@ -62,7 +68,8 @@ class SqlAlchemyCoupon(AsyncCouponService):
             async with self.uow:
                 await self.session_service.validate_access_token_session(check_data)
 
-                result: Optional[OutCoupon] = await self.uow.coupon_repo.used_coupon(user_id, hashlib.sha256(token.encode()).hexdigest())
+                result: Optional[OutCoupon] = await self.uow.coupon_repo.used_coupon(user_id, hashlib.sha256(
+                    token.encode()).hexdigest())
 
                 return result
         except HTTPException:

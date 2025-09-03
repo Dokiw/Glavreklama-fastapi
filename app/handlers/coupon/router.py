@@ -1,3 +1,4 @@
+import datetime
 from typing import Optional, List
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Request, Body, Form
@@ -15,9 +16,8 @@ async def hub():
     return HTTPException(200, 'Status - True')
 
 
-@router.post("/create_coupon", response_model=Optional[OutCoupon])
+@router.post("/create_coupon", response_model=Optional[OutCoupon] | datetime.datetime)
 async def create_coupon(
-        description: str,
         name: str,
         user_id: int,
         request: Request,
@@ -37,7 +37,7 @@ async def create_coupon(
 
     ccs = CreateCouponService(
         user_id=user_id,
-        description=description,
+        description=None,
         name=name,
         status=None
     )

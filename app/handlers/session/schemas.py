@@ -6,6 +6,16 @@ from pydantic import BaseModel, EmailStr, Field
 # ---- Request / Input ---- SESSION
 class OpenSession(BaseModel):
     user_id: int = Field(..., alias="userId")
+    client_id: Optional[str] = Field(None, alias="clientId")
+    id_address: Optional[str] = Field(None, alias="ipAddress")
+    user_agent: Optional[str] = Field(None, alias="userAgent")
+
+    class Config:
+        validate_by_name = True
+
+
+class OpenSessionRepo(BaseModel):
+    user_id: int = Field(..., alias="userId")
     client_id: Optional[int] = Field(None, alias="clientId")
     id_address: Optional[str] = Field(None, alias="ipAddress")
     user_agent: Optional[str] = Field(None, alias="userAgent")
@@ -76,7 +86,8 @@ class OutSession(BaseModel):
     created_at: Optional[dt.datetime] = Field(None, alias="createdAt")
     last_used_at: Optional[dt.datetime] = Field(None, alias="lastUserAt")
     ip_address: Optional[str] = Field(None, alias="IpAddress")
-    user_agent: Optional[str] = Field(None,alias="UserAgent")
+    user_agent: Optional[str] = Field(None, alias="UserAgent")
+
     class Config:
         validate_by_name = True
         from_attributes = True
@@ -163,15 +174,16 @@ class CheckOauthClient(BaseModel):
 
 
 class OutOauthClient(BaseModel):
+    id: int = Field(..., alias="id")
     name: str = Field(..., alias="Name")
     client_id: str = Field(..., alias="ClientId")
-    client_secret: str = Field(..., alias="ClientSecret")
+    client_secret: Optional[str] = Field(None, alias="ClientSecret")
     redirect_url: Optional[str] = Field(None, alias="RedirectUrl")
-    grant_types: list[str] = Field(..., alias="GrantType")
-    scopes: list[str] = Field(..., alias="Scopes")
+    grant_types: Optional[list[str]] = Field(None, alias="GrantType")
+    scopes: Optional[list[str]] = Field(None, alias="Scopes")
     is_confidential: bool = Field(..., alias="IsConfidential")
-    created_at: dt.datetime = Field(..., alias="CreatedAt")
-    updated_at: dt.datetime = Field(..., alias="UpdatedAt")
+    created_at: Optional[dt.datetime] = Field(None, alias="CreatedAt")
+    updated_at: Optional[dt.datetime] = Field(None, alias="UpdatedAt")
     revoked: bool = Field(..., alias="Revoked")
 
     class Config:

@@ -19,7 +19,7 @@ from app.handlers.providers.interfaces import AsyncProvidersService
 from app.method.initdatatelegram import check_telegram_init_data
 
 
-#from app.method.initdatatelegram import verify_telegram_init_data
+# from app.method.initdatatelegram import verify_telegram_init_data
 
 
 class SqlAlchemyAuth(AsyncAuthService):
@@ -70,17 +70,22 @@ class SqlAlchemyAuth(AsyncAuthService):
             description=role.description
         )
 
-    async def login(self, login_data: LogInUser, ip: str, user_agent: str) -> AuthResponse:
+    async def login(self, login_data: LogInUser, ip: str, user_agent: str, oauth_client: str) -> AuthResponse:
         try:
             async with self.uow:
                 auth: Optional[UserAuthData] = await self.uow.user_repo.get_auth_data(login_data.username)
+
+                #todo - НАДО СДЕЛАТЬ МЕТОД ДЛЯ ПОЛУЧЕНИЯ OAUTH_CLIE
+                #oauth_client_data: Optional[OutSession] = await self.session_service.get_oauth_by_client(oauth_client)
+
+
                 # выкидываем если нет пользователя и данных
                 if not auth or not auth.verify_password(login_data.password):
                     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
                 session = await self.session_service.open_session(OpenSession(
                     user_id=auth.id,
-                    client_id=login_data.client_id if login_data.client_id else None,
+                    client_id=oauth_client,
                     ip_address=ip,
                     user_agent=user_agent,
                 ))
@@ -111,7 +116,7 @@ class SqlAlchemyAuth(AsyncAuthService):
 
         return AuthResponse(user_data=out, token=token)
 
-    async def logout(self, id_user: int, ip: str, user_agent: str, access_token: str) -> None:
+    async def logout(self, id_user: int, ip: str, user_agent: str, access_token: str,oauth_client: str) -> None:
         try:
             async with self.uow:
                 session = await self.session_service.get_by_access_token_session(access_token)
@@ -138,7 +143,7 @@ class SqlAlchemyAuth(AsyncAuthService):
             )
         return None
 
-    async def register(self, user_data: UserCreate, ip: str, user_agent: str) -> Optional[AuthResponse]:
+    async def register(self, user_data: UserCreate, ip: str, user_agent: str, oauth_client: str) -> Optional[AuthResponse]:
         try:
             async with self.uow:
                 user: Optional[OutUser] = await self.uow.user_repo.create_user(user_data)
@@ -146,6 +151,7 @@ class SqlAlchemyAuth(AsyncAuthService):
                     user_id=user.id,
                     ip_address=ip,
                     user_agent=user_agent,
+                    client_id=oauth_client,
                 )
                 session: Optional[OutSession] = await self.session_service.open_session(session_data)
 
@@ -176,7 +182,7 @@ class SqlAlchemyAuth(AsyncAuthService):
 
         return AuthResponse(user_data=OutUser.from_orm(user), token=token)
 
-    async def login_from_provider(self, user_data: ProviderLoginRequest, ip: str, user_agent: str) -> (
+    async def login_from_provider(self, client_id: str, user_data: ProviderLoginRequest, ip: str, user_agent: str, oauth_client: str) -> (
             Optional)[AuthResponseProvide]:
         try:
             async with self.uow:
@@ -200,7 +206,7 @@ class SqlAlchemyAuth(AsyncAuthService):
                     user_id=user.id,
                     ip_address=ip,
                     user_agent=user_agent,
-                    client_id=None  # или передать client_id если есть
+                    client_id=client_id  # или передать client_id если есть
                 )
                 session: OutSession = await self.session_service.open_session(session_data)
 
@@ -236,6 +242,7 @@ class SqlAlchemyAuth(AsyncAuthService):
             init_data: str,
             ip: str,
             user_agent: str,
+            oauth_client: str
     ) -> Optional[AuthResponseProvide]:
         try:
             async with self.uow:  # единая транзакция для всех операций
@@ -281,7 +288,6 @@ class SqlAlchemyAuth(AsyncAuthService):
                         password=None
                     )
 
-
                     # 6) создаём локального пользователя (flush внутри create_user должен дать id)
                     user: OutUser = await self.uow.user_repo.create_user_provide(user_create_payload)
 
@@ -301,7 +307,8 @@ class SqlAlchemyAuth(AsyncAuthService):
                     try:
                         provide = await self.provide_user.create_provider_user(create_provider_payload)
                     except IntegrityError as e:
-                        # гонка: другой процесс уже создал provider; в этом случае читаем его и используем связанного user
+                        # гонка: другой процесс уже создал provider; в этом случае читаем его и используем связанного
+                        # user
                         pgcode = getattr(getattr(e, "orig", None), "pgcode", None)
                         if pgcode == "23505":
                             # повторно получим провайдера
@@ -323,7 +330,7 @@ class SqlAlchemyAuth(AsyncAuthService):
                     user_id=user.id,
                     ip_address=ip,
                     user_agent=user_agent,
-                    client_id=None  # или передать client_id если есть
+                    client_id=oauth_client  # или передать client_id если есть
                 )
                 session: OutSession = await self.session_service.open_session(session_data)
 
