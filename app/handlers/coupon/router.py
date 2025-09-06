@@ -85,7 +85,29 @@ async def get_by_user_id(
         access_token=access_token
     )
 
-    return await coupon_service.get_by_user_id(user_id=user_id, check_data=csat)
+    return await coupon_service.get_by_user_id(check_data=csat)
+
+
+@router.post("/get_by_any_user_id", response_model=Optional[List[OutCoupon]])
+async def get_by_any_user_id(
+        user_id: int,
+        admin_user_id: int,
+        request: Request,
+        coupon_service: couponServiceDep,
+        access_token: str = Depends(get_token)
+):
+    # Получаем IP и User-Agent из запроса
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "")
+
+    csat = CheckSessionAccessToken(
+        user_id=admin_user_id,
+        ip_address=ip,
+        user_agent=user_agent,
+        access_token=access_token
+    )
+
+    return await coupon_service.get_by_any_user_id(id_user=user_id, check_data=csat)
 
 
 @router.post("/get_info_by_coupon_id", response_model=Optional[OutCoupon])

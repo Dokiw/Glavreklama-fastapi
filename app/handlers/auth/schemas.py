@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, EmailStr, Field
 
 from app.handlers.providers.schemas import ProviderOut, ProviderLoginRequest
@@ -38,8 +38,10 @@ class LogInUser(BaseModel):
     class Config:
         validate_by_name = True
 
+
 class InitDataRequest(BaseModel):
     init_data: str
+
 
 class LogOutUser(BaseModel):
     user_id: int = Field(..., alias="idUser")
@@ -64,6 +66,12 @@ class OutUser(BaseModel):
 class RoleUser(BaseModel):
     name: str
     description: Optional[str] = None
+
+
+class PaginateUser(BaseModel):
+    users: List[OutUser]
+    total: int
+    Offset_current: int
 
 
 # --- Auth / Tokens ---

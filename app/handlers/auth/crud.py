@@ -2,7 +2,7 @@ from app.handlers.auth.dto import UserAuthData
 from app.handlers.auth.schemas import OutUser, UserCreate, RoleUser, UserCreateProvide
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.handlers.auth.interfaces import AsyncUserRepository, AsyncRoleRepository
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.models.auth.models import User as UserModel, Role as RoleModel
 
 from typing import TYPE_CHECKING, Optional, List
@@ -47,6 +47,12 @@ class UserRepository(AsyncUserRepository):
         self.db.add(m)
         await self.db.flush()
         return self._to_dto(m)
+
+    async def count_users(self) -> int:
+        count_q = select(func.count(UserModel.id))
+        count_result = await self.db.execute(count_q)
+        total = count_result.scalar_one()
+        return total
 
     async def list_users(self, limit: int = 100, offset: int = 0) -> List[OutUser]:
         q = select(UserModel).offset(offset).limit(limit)

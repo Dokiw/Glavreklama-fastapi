@@ -2,6 +2,8 @@ import hashlib
 from typing import Optional, List
 import time
 from datetime import datetime, timedelta, UTC
+
+from app.handlers.auth.interfaces import AsyncRoleService
 from app.handlers.coupon.interfaces import AsyncCouponService
 from app.handlers.coupon.UOW import SqlAlchemyUnitOfWork
 from app.handlers.coupon.schemas import CreateCoupon, OutCoupon, CreateCouponService
@@ -14,9 +16,10 @@ from app.method.generator_promo import PromoGenerator
 
 
 class SqlAlchemyCoupon(AsyncCouponService):
-    def __init__(self, uow: IUnitOfWorkCoupon, session_service: SessionServiceDep):
+    def __init__(self, uow: IUnitOfWorkCoupon, role_service: AsyncRoleService, session_service: SessionServiceDep):
         self.uow = uow
         self.session_service = session_service
+        self.role_service = role_service
 
     async def create_coupon(self, coupon_data: CreateCouponService, check_data: CheckSessionAccessToken) -> Optional[
                                                                                                                 OutCoupon] | datetime:
@@ -82,14 +85,39 @@ class SqlAlchemyCoupon(AsyncCouponService):
                 detail=f"Внутренняя ошибка сервера: {str(e)}"
             )
 
-    async def get_by_user_id(self, user_id: int, check_data: CheckSessionAccessToken) -> Optional[List[OutCoupon]]:
+    async def get_by_any_user_id(self, id_user: int, check_data: CheckSessionAccessToken) -> Optional[List[OutCoupon]]:
+        try:
+            async with self.uow:
+                u_r = await self.role_service.is_admin(check_data.user_id)
+                if not u_r:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="нет прав"
+                    )
+
+                await self.session_service.validate_access_token_session(check_data)
+                results: Optional[List[OutCoupon]] = await self.uow.coupon_repo.get_by_user_id(id_user)
+                if results is None:
+                    return None
+                return results
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
+        except Exception as e:
+            # Откатываем транзакцию при любой другой ошибке
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Внутренняя ошибка сервера: {str(e)}"
+            )
+
+    async def get_by_user_id(self, check_data: CheckSessionAccessToken) -> Optional[List[OutCoupon]]:
         try:
             async with self.uow:
                 await self.session_service.validate_access_token_session(check_data)
-                results: Optional[List[OutCoupon]] = await self.uow.coupon_repo.get_by_user_id(user_id)
+                results: Optional[List[OutCoupon]] = await self.uow.coupon_repo.get_by_user_id(check_data.user_id)
                 if results is None:
                     return None
-                return [i for i in results]
+                return results
 
         except HTTPException:
             # просто пробрасываем дальше, чтобы не превращать в 500
@@ -123,7 +151,6 @@ class SqlAlchemyCoupon(AsyncCouponService):
         try:
             async with self.uow:
                 await self.session_service.validate_access_token_session(check_data)
-
                 result: Optional[OutCoupon] = await self.uow.coupon_repo.get_by_token_hash(token)
 
                 return result

@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -9,8 +9,8 @@ import asyncpg
 from app.core.abs.unit_of_work import IUnitOfWorkAuth
 from app.core.config import settings
 from app.handlers.auth.dto import UserAuthData
-from app.handlers.auth.interfaces import AsyncAuthService
-from app.handlers.auth.schemas import LogInUser, RoleUser, AuthResponse, OutUser, Token, UserCreate, UserCreateProvide, \
+from app.handlers.auth.interfaces import AsyncAuthService, AsyncRoleService
+from app.handlers.auth.schemas import PaginateUser, LogInUser, RoleUser, AuthResponse, OutUser, Token, UserCreate, UserCreateProvide, \
     AuthResponseProvide
 from app.handlers.providers.schemas import ProviderRegisterRequest, ProviderLoginRequest, ProviderOut
 from app.handlers.session.interfaces import AsyncSessionService
@@ -27,57 +27,22 @@ class SqlAlchemyAuth(AsyncAuthService):
             self,
             uow: IUnitOfWorkAuth,
             session_service: AsyncSessionService,
-            provide_user: AsyncProvidersService
+            provide_user: AsyncProvidersService,
+            role_service: AsyncRoleService,
 
     ):
         self.uow = uow
         self.session_service = session_service
         self.provide_user = provide_user
-
-    async def identification(self, id_user: int, ip: str, user_agent: str, access_token: str) -> Optional[RoleUser]:
-        try:
-            async with self.uow:
-                session = await self.session_service.get_by_access_token_session(access_token)
-
-                if session is None:
-                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
-
-                session_data = CheckSessionAccessToken(
-                    id=session.id,
-                    user_id=session.user_id,
-                    access_token=session.access_token,
-                    ip_address=ip,
-                    user_agent=user_agent,
-                )
-
-                await self.session_service.validate_access_token_session(session_data)
-
-                role: Optional[RoleUser] = await self.uow.role_repo.get_by_user_id(id_user)
-                if not role:
-                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
-        except HTTPException:
-            # просто пробрасываем дальше, чтобы не превращать в 500
-            raise
-        except Exception as e:
-            # Откатываем транзакцию при любой другой ошибке
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Внутренняя ошибка сервера: {str(e)}"
-            )
-
-        return RoleUser(
-            name=role.name,
-            description=role.description
-        )
+        self.role_service = role_service
 
     async def login(self, login_data: LogInUser, ip: str, user_agent: str, oauth_client: str) -> AuthResponse:
         try:
             async with self.uow:
                 auth: Optional[UserAuthData] = await self.uow.user_repo.get_auth_data(login_data.username)
 
-                #todo - НАДО СДЕЛАТЬ МЕТОД ДЛЯ ПОЛУЧЕНИЯ OAUTH_CLIE
-                #oauth_client_data: Optional[OutSession] = await self.session_service.get_oauth_by_client(oauth_client)
-
+                # todo - НАДО СДЕЛАТЬ МЕТОД ДЛЯ ПОЛУЧЕНИЯ OAUTH_CLIE
+                # oauth_client_data: Optional[OutSession] = await self.session_service.get_oauth_by_client(oauth_client)
 
                 # выкидываем если нет пользователя и данных
                 if not auth or not auth.verify_password(login_data.password):
@@ -116,7 +81,7 @@ class SqlAlchemyAuth(AsyncAuthService):
 
         return AuthResponse(user_data=out, token=token)
 
-    async def logout(self, id_user: int, ip: str, user_agent: str, access_token: str,oauth_client: str) -> None:
+    async def logout(self, id_user: int, ip: str, user_agent: str, access_token: str, oauth_client: str) -> None:
         try:
             async with self.uow:
                 session = await self.session_service.get_by_access_token_session(access_token)
@@ -124,7 +89,6 @@ class SqlAlchemyAuth(AsyncAuthService):
                     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
 
                 session_data = CheckSessionAccessToken(
-                    id=session.id,
                     user_id=session.user_id,
                     access_token=session.access_token,
                     ip_address=ip,
@@ -143,7 +107,8 @@ class SqlAlchemyAuth(AsyncAuthService):
             )
         return None
 
-    async def register(self, user_data: UserCreate, ip: str, user_agent: str, oauth_client: str) -> Optional[AuthResponse]:
+    async def register(self, user_data: UserCreate, ip: str, user_agent: str, oauth_client: str) -> Optional[
+        AuthResponse]:
         try:
             async with self.uow:
                 user: Optional[OutUser] = await self.uow.user_repo.create_user(user_data)
@@ -182,7 +147,8 @@ class SqlAlchemyAuth(AsyncAuthService):
 
         return AuthResponse(user_data=OutUser.from_orm(user), token=token)
 
-    async def login_from_provider(self, client_id: str, user_data: ProviderLoginRequest, ip: str, user_agent: str, oauth_client: str) -> (
+    async def login_from_provider(self, client_id: str, user_data: ProviderLoginRequest, ip: str, user_agent: str,
+                                  oauth_client: str) -> (
             Optional)[AuthResponseProvide]:
         try:
             async with self.uow:
@@ -355,3 +321,61 @@ class SqlAlchemyAuth(AsyncAuthService):
             raise
         except Exception as e:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+    async def get_users(self, id_user: int, ip: str, user_agent: str, access_token: str,
+                        oauth_client: str, offset: int, limit: int) -> (
+            Optional)[List[OutUser]]:
+
+        # проверяем состояния - доступ ток админ
+        r_u = await self.role_service.is_admin(id_user)
+        if not r_u:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Нет прав"
+            )
+
+        session_data = CheckSessionAccessToken(
+            user_id=id_user,
+            access_token=access_token,
+            ip_address=ip,
+            user_agent=user_agent,
+        )
+        # Проверяем состояния сессии
+        await self.session_service.validate_access_token_session(session_data)
+
+        users = await self.uow.user_repo.list_users(offset=offset, limit=limit)
+        total = await self.uow.user_repo.count_users()
+        pag_user = PaginateUser(
+            users=users,
+            total=total,
+            Offset_current=offset,
+        )
+        return pag_user
+
+
+class SqlAlchemyRole(AsyncRoleService):
+    def __init__(self, uow: IUnitOfWorkAuth):
+        self.uow = uow
+
+    # Надо будет подумать, стоит ли в таком формате оставить или лучше поменять, потому что, в моём понимании
+    # Это костыль, в текущий момент, но в дальнейшем может быть переработано в автоматическую систему по определенным грифам например
+    async def is_admin(self, id_user: int) -> bool:
+        try:
+            async with self.uow:
+                role: Optional[RoleUser] = await self.uow.role_repo.get_by_user_id(id_user)
+                if not role:
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+
+                if role.name not in ['Admin', 'Manager']:
+                    return False
+
+                return True
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
+        except Exception as e:
+            # Откатываем транзакцию при любой другой ошибке
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Внутренняя ошибка сервера: {str(e)}"
+            )

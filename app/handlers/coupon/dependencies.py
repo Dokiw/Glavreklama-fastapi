@@ -4,7 +4,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-
+from app.handlers.auth.dependencies import RoleServiceDep
 
 from app.handlers.session.dependencies import SessionServiceDep
 
@@ -22,9 +22,10 @@ async def get_uow(db: AsyncSession = Depends(get_db)) -> IUnitOfWorkCoupon:
 # фабрика сервиса сессий
 def get_session_service(
         session_service: SessionServiceDep,
+        role_service: RoleServiceDep,
         uow: IUnitOfWorkCoupon = Depends(get_uow)
 ) -> AsyncCouponService:
-    return SqlAlchemyCoupon(session_service=session_service, uow=uow)
+    return SqlAlchemyCoupon(session_service=session_service, uow=uow, role_service=role_service)
 
 
 # alias для роутов
