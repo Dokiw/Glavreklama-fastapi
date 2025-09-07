@@ -66,13 +66,32 @@ class SqlAlchemyCoupon(AsyncCouponService):
                 detail=f"Внутренняя ошибка сервера: {str(e)}"
             )
 
-    async def used_coupon(self, user_id: int, token: str, check_data: CheckSessionAccessToken) -> Optional[OutCoupon]:
+    async def used_coupon(self, token: str, check_data: CheckSessionAccessToken) -> Optional[OutCoupon]:
         try:
             async with self.uow:
                 await self.session_service.validate_access_token_session(check_data)
 
-                result: Optional[OutCoupon] = await self.uow.coupon_repo.used_coupon(user_id, hashlib.sha256(
-                    token.encode()).hexdigest())
+                result: Optional[OutCoupon] = await self.uow.coupon_repo.used_coupon(check_data.user_id, token)
+
+                await self.uow.commit()
+                return result
+        except HTTPException:
+            # просто пробрасываем дальше, чтобы не превращать в 500
+            raise
+        except Exception as e:
+            # Откатываем транзакцию при любой другой ошибке
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Внутренняя ошибка сервера: {str(e)}"
+            )
+
+    async def used_any_coupon(self, user_id: int, token: str, check_data: CheckSessionAccessToken) -> Optional[OutCoupon]:
+        try:
+            async with self.uow:
+                await self.role_service.is_admin(check_data.user_id)
+                await self.session_service.validate_access_token_session(check_data)
+
+                result: Optional[OutCoupon] = await self.uow.coupon_repo.used_coupon(user_id, token)
 
                 return result
         except HTTPException:

@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Optional, List
 
 from app.handlers.coupon.schemas import OutCoupon, CreateCoupon
 from app.handlers.coupon.interfaces import AsyncCouponService, AsyncCouponRepository
+from app.main import logger
 from app.models import CouponUser
 
 from sqlalchemy import select, update
@@ -55,7 +56,7 @@ class CouponRepository(AsyncCouponRepository):
         return await self._to_dto(m) if m else None
 
     async def get_by_user_id(self, user_id: int) -> Optional[List[OutCoupon]]:
-        q = select(CouponUser).where(CouponUser.user_id == user_id).order_by(CouponUser.created_at.desc()).limit(5)
+        q = select(CouponUser).where((CouponUser.user_id == user_id) & (CouponUser.is_active == True)).order_by(CouponUser.created_at.desc()).limit(5)
         result = await self.db.execute(q)
         sessions = result.scalars().all()
         if sessions is None:
@@ -88,8 +89,8 @@ class CouponRepository(AsyncCouponRepository):
         )
 
         stmt = stmt.values(is_active=False).returning(CouponUser)
-
         result = await self.db.execute(stmt)
+
         result = result.scalar_one_or_none()
 
         return await self._to_dto(result) if result else None

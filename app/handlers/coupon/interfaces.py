@@ -34,7 +34,10 @@ class AsyncCouponService(Protocol):
     async def create_coupon(self, coupon_data: CreateCouponService, check_data: CheckSessionAccessToken) -> Optional[OutCoupon]:
         ...
 
-    async def used_coupon(self, user_id: int, token: str, check_data: CheckSessionAccessToken) -> Optional[OutCoupon]:
+    async def used_coupon(self, token: str, check_data: CheckSessionAccessToken) -> Optional[OutCoupon]:
+        ...
+
+    async def used_any_coupon(self, user_id: int, token: str, check_data: CheckSessionAccessToken) -> Optional[OutCoupon]:
         ...
 
     async def get_by_user_id(self, check_data: CheckSessionAccessToken) -> Optional[List[OutCoupon]]:

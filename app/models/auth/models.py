@@ -22,20 +22,20 @@ from app.models.coupon import CouponUser
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(BigInteger,primary_key=True)
-    first_name: Mapped[str | None] = mapped_column(String(255),nullable=True)
-    last_name: Mapped[str | None] = mapped_column(String(255),nullable=True)
-    user_name: Mapped[str] = mapped_column(String(255),unique=True)
-    email: Mapped[str | None] = mapped_column(String(255),unique=True,nullable=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    first_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    last_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    user_name: Mapped[str] = mapped_column(String(255), unique=True)
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
 
-    pass_hash: Mapped[str | None] = mapped_column("pass",String(255),nullable=True)
+    pass_hash: Mapped[str | None] = mapped_column("pass", String(255), nullable=True)
 
     role_id: Mapped[int | None] = mapped_column(
         ForeignKey("roles.id", ondelete="SET NULL"),
         nullable=True
     )
 
-    status: Mapped[bool] = mapped_column(Boolean,default=True)
+    status: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now()
     )
@@ -82,11 +82,12 @@ class User(Base):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
+
 class Role(Base):
     __tablename__ = "roles"
 
-    id: Mapped[int] = mapped_column(BigInteger,primary_key=True)
-    name: Mapped[str] = mapped_column(String(100),unique=True)
-    description: Mapped[str | None] = mapped_column(Text,nullable=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     users: Mapped[List["User"]] = relationship("User", back_populates="role")
