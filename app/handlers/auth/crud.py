@@ -24,7 +24,9 @@ class UserRepository(AsyncUserRepository):
         return OutUser(
             id=m.id,
             username=m.user_name,
-            email=m.email
+            email=m.email,
+            first_name=m.first_name,
+            last_name=m.last_name
         )
 
     async def create_user(self, user_in: UserCreate) -> OutUser:

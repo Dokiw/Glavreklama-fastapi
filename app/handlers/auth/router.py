@@ -94,7 +94,6 @@ async def get_users(
         id_user: int,
         offset: int,
         limit: Optional[int],
-        oauth_client: str,
         request: Request,
         access_token: str = Depends(get_token),
 ):
@@ -103,4 +102,4 @@ async def get_users(
     user_agent = request.headers.get("user-agent", "")
 
     return await auth_service.get_users(id_user=id_user, ip=ip, offset=offset, limit=limit,
-                                        oauth_client=oauth_client, user_agent=user_agent, access_token=access_token)
+                                        user_agent=user_agent, access_token=access_token)

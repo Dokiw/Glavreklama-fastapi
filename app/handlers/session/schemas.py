@@ -59,6 +59,7 @@ class CheckSessionRefreshToken(BaseModel):
     refresh_token: str = Field(..., alias="refreshToken")
     ip_address: Optional[str] = Field(None, alias="ipAddress")
     user_agent: Optional[str] = Field(None, alias="userAgent")
+    oauth_client: str = Field(..., alias="oauth_Client")
 
     class Config:
         validate_by_name = True

@@ -81,7 +81,7 @@ class SqlAlchemyAuth(AsyncAuthService):
 
         return AuthResponse(user_data=out, token=token)
 
-    async def logout(self, id_user: int, ip: str, user_agent: str, access_token: str, oauth_client: str) -> None:
+    async def logout(self, id_user: int, ip: str, user_agent: str, access_token: str) -> None:
         try:
             async with self.uow:
                 session = await self.session_service.get_by_access_token_session(access_token)
@@ -92,7 +92,7 @@ class SqlAlchemyAuth(AsyncAuthService):
                     user_id=session.user_id,
                     access_token=session.access_token,
                     ip_address=ip,
-                    user_agent=user_agent,
+                    user_agent=user_agent
                 )
                 session: Optional[OutSession] = await self.session_service.validate_access_token_session(session_data)
                 await self.session_service.close_session(session.id)
@@ -323,7 +323,7 @@ class SqlAlchemyAuth(AsyncAuthService):
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
     async def get_users(self, id_user: int, ip: str, user_agent: str, access_token: str,
-                        oauth_client: str, offset: int, limit: int) -> (
+                        offset: int, limit: int) -> (
             Optional)[List[OutUser]]:
 
         # проверяем состояния - доступ ток админ
@@ -338,7 +338,7 @@ class SqlAlchemyAuth(AsyncAuthService):
             user_id=id_user,
             access_token=access_token,
             ip_address=ip,
-            user_agent=user_agent,
+            user_agent=user_agent
         )
         # Проверяем состояния сессии
         await self.session_service.validate_access_token_session(session_data)

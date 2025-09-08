@@ -54,7 +54,7 @@ class AsyncAuthService(Protocol):
                     user_agent: str, oauth_client: str) -> AuthResponse:  # например возвращает токен + user
         ...
 
-    async def logout(self, id_user: int, ip: str, user_agent: str, access_token: str, oauth_client: str) -> None:
+    async def logout(self, id_user: int, ip: str, user_agent: str, access_token: str) -> None:
         ...
 
     async def register(self, user_data: UserCreate, ip: str, user_agent: str, oauth_client: str) -> Optional[OutUser]:
@@ -70,7 +70,7 @@ class AsyncAuthService(Protocol):
         ...
 
     async def get_users(self, id_user: int, ip: str, user_agent: str, access_token: str,
-                        oauth_client: str, offset: int, limit: int) -> (
+                        offset: int, limit: int) -> (
             Optional)[List[OutUser]]:
         ...
 

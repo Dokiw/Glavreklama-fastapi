@@ -36,6 +36,7 @@ origins = [
     "http://127.0.0.1:9787",
     "https://glavprojects.ru",
     "https://catcheggsapp.web.app",
+    "https://admin.glavprojects.ru",
 ]
 
 # Подключаем CORS

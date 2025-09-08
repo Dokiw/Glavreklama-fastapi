@@ -21,7 +21,7 @@ async def hub():
 
 @router.post("/refresh_token",response_model=OutSession)
 async def validate_session(session_service: SessionServiceDep, user_id: int,
-                           refresh_token: str, request: Request):
+                           refresh_token: str, oauth_client: str, request: Request):
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -30,5 +30,6 @@ async def validate_session(session_service: SessionServiceDep, user_id: int,
         refresh_token=refresh_token,
         id_address=ip,
         user_agent=user_agent,
+        oauth_client=oauth_client,
     )
     return await session_service.validate_refresh_token_session(session_data)

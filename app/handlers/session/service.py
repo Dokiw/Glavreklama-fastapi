@@ -166,11 +166,6 @@ class SqlAlchemyServiceSession(AsyncSessionService):
                     if current_ip not in session_net:
                         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ошибка целостности данных")
 
-                if session.user_agent != check_access_token_data.user_agent:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Ошибка целостности данных"
-                    )
 
                 # timestamp = str(time()).encode()
                 #
@@ -209,6 +204,16 @@ class SqlAlchemyServiceSession(AsyncSessionService):
                 session = await self.uow.sessions.get_by_id_user_session(check_refresh_token_data.user_id)
                 if session is None:
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Отсутствует данные")
+
+                # важная проверка на клиента
+                client_data_oauth: Optional[OutOauthClient] = await self.uow.oauth_clients.get_by_client_id_oauth(
+                    check_refresh_token_data.oauth_client)
+
+                if client_data_oauth is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Клиента с таким наименованием нету"
+                    )
 
                 refresh_datas = await self.refresh_service.get_by_id_session_refresh(session.id)
 
