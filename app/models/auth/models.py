@@ -16,8 +16,9 @@ from datetime import datetime
 from passlib.hash import bcrypt
 
 from app.db.base import Base
-from app.models import Wallet, Payments
+from app.models.pay import Wallet, Payments
 from app.models.coupon import CouponUser
+from app.models.providers.models import UserProviders
 
 
 class User(Base):

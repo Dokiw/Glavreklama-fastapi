@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Optional
 from decimal import Decimal, ROUND_DOWN
 from typing import Optional, Any, Dict
@@ -63,7 +64,7 @@ class Payments(Base):
         ),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
