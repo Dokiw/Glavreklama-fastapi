@@ -21,6 +21,15 @@ class UpdateWallets(BaseModel):
         validate_by_name = True
 
 
+class UpdateWalletsService(BaseModel):
+    id: int = Field(..., alias="Id")
+    amount: Decimal = Field(..., alias="Amount")
+    reason: Optional[str] = Field(None, alias="Reason")
+
+    class Config:
+        validate_by_name = True
+
+
 # ---- Response / Output ---- wallets
 
 class OutWallets(BaseModel):
@@ -76,6 +85,7 @@ class PaymentsOut(BaseModel):
     status: str = Field(..., alias="Status")
     yookassa_payment_id: str = Field(..., alias="YookassaPaymentId")
     currency: str = Field(..., alias="Currency")
+    idempotency_key: Optional[str] = Field(None, alias="IdempotencyKey")
 
     created_at: datetime = Field(..., alias="CreateAt")
     updated_at: Optional[datetime] = Field(None, alias="UpdatedAt")
