@@ -1,11 +1,11 @@
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.abs.unit_of_work import IUnitOfWorkCoupon
+from app.core.abs.unit_of_work import IUnitOfWorkWallet
 from app.handlers.coupon.interfaces import AsyncCouponRepository
 from app.handlers.coupon.crud import CouponRepository
 
 
-class SqlAlchemyUnitOfWork(IUnitOfWorkCoupon):
+class SqlAlchemyUnitOfWork(IUnitOfWorkWallet):
     def __init__(self, session_factory):
         self.session_factory = session_factory
         self._session: Optional[AsyncSession] = None

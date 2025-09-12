@@ -4,6 +4,7 @@ from contextlib import AbstractAsyncContextManager
 from typing import Optional
 
 from app.handlers.auth.interfaces import AsyncUserRepository, AsyncRoleRepository
+from app.handlers.pay.interfaces import AsyncWalletRepository, AsyncPaymentRepository
 from app.handlers.session.interfaces import AsyncSessionRepository, AsyncRefreshTokenRepository, \
     AsyncOauthClientRepository
 
@@ -84,6 +85,36 @@ class IUnitOfWorkCoupon(AbstractAsyncContextManager, ABC):
     @property
     @abstractmethod
     def coupon_repo(self) -> "AsyncCouponRepository":
+        pass
+
+    @abstractmethod
+    async def commit(self):
+        pass
+
+    @abstractmethod
+    async def rollback(self):
+        pass
+
+
+class IUnitOfWorkPayment(AbstractAsyncContextManager, ABC):
+    @property
+    @abstractmethod
+    def payment_repo(self) -> "AsyncPaymentRepository":
+        pass
+
+    @abstractmethod
+    async def commit(self):
+        pass
+
+    @abstractmethod
+    async def rollback(self):
+        pass
+
+
+class IUnitOfWorkWallet(AbstractAsyncContextManager, ABC):
+    @property
+    @abstractmethod
+    def wallet_repo(self) -> "AsyncWalletRepository":
         pass
 
     @abstractmethod

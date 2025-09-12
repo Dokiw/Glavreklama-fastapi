@@ -9,7 +9,7 @@ from app.handlers.coupon.UOW import SqlAlchemyUnitOfWork
 from app.handlers.coupon.schemas import CreateCoupon, OutCoupon, CreateCouponService
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
-from app.core.abs.unit_of_work import IUnitOfWorkCoupon
+from app.core.abs.unit_of_work import IUnitOfWorkWallet, IUnitOfWorkCoupon
 from app.handlers.session.dependencies import SessionServiceDep
 from app.handlers.session.schemas import CheckSessionAccessToken
 from app.method.generator_promo import PromoGenerator

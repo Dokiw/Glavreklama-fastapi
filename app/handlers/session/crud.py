@@ -168,11 +168,11 @@ class SessionRepository(AsyncSessionRepository):
 
     async def get_by_access_token_session(self, access_token: str) -> Optional[OutSession]:
 
-        stmt = select(SessionModel).where(
+        q = select(SessionModel).where(
             SessionModel.access_token == access_token,
             SessionModel.is_active == True
         ).limit(1)
-        res = await self.db.execute(stmt)
+        res = await self.db.execute(q)
         model = res.scalars().first()
         if model is None:
             return None

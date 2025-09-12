@@ -1,7 +1,9 @@
 from typing import Protocol, List, Optional, Dict, Any
 
-from app.handlers.pay.schemas import CreatePaymentsOut, PaymentsOut, CreatePayments, UpdatePayments, CreateWallets, \
-    UpdateWalletsService, OutWallets
+from app.handlers.pay.schemas import CreatePaymentsOut, PaymentsOut, CreatePaymentsService, UpdatePayments, \
+    CreateWallets, \
+    UpdateWalletsService, OutWallets, UpdateWallets, CreatePayments
+from app.handlers.session.schemas import CheckSessionAccessToken
 
 
 class AsyncWalletRepository(Protocol):
@@ -9,7 +11,7 @@ class AsyncWalletRepository(Protocol):
     async def create_wallet_user(self, create_data: CreateWallets) -> OutWallets:
         ...
 
-    async def update_wallets_user(self, update_data: UpdateWalletsService) -> OutWallets:
+    async def update_wallets_user(self, update_data: UpdateWallets) -> OutWallets:
         ...
 
     # todo - определить в будущем для составления таблицы для bot.
@@ -25,17 +27,55 @@ class AsyncWalletRepository(Protocol):
 
 class AsyncPaymentRepository(Protocol):
 
-    async def create_payments(self) -> CreatePaymentsOut:
+    async def create_payments(self, create_data: CreatePayments) -> CreatePaymentsOut:
         ...
 
-    async def update_payments(self) -> PaymentsOut:
+    async def update_payments(self, update_data: UpdatePayments) -> PaymentsOut:
         ...
 
-    async def get_payments_by_user_id(self) -> Optional[PaymentsOut]:
+    async def get_payments_by_user_id(self, user_id: int) -> Optional[List[PaymentsOut]]:
         ...
 
-    async def get_payments_by_id(self) -> Optional[PaymentsOut]:
+    async def get_payments_by_id(self, payments_id: str) -> Optional[PaymentsOut]:
         ...
 
-    async def get_payments_by_idempotency_id(self) -> Optional[PaymentsOut]:
+    async def get_payments_by_idempotency_id(self, idempotency_id: str) -> Optional[PaymentsOut]:
+        ...
+
+
+class AsyncWalletService(Protocol):
+    async def create_wallet_or_get_wallet(self, check_data: CheckSessionAccessToken) -> OutWallets:
+        ...
+
+    async def update_wallets_user(self, update_data: UpdateWalletsService,
+                                  check_data: CheckSessionAccessToken) -> OutWallets:
+        ...
+
+    async def get_wallet_by_id(self, id: int, check_data: CheckSessionAccessToken) -> Optional[OutWallets]:
+        ...
+
+
+class AsyncPaymentService(Protocol):
+
+    async def create_payments(self, create_data: CreatePaymentsService,
+                              check_data: CheckSessionAccessToken) -> CreatePaymentsOut:
+        ...
+
+    async def update_payments(self, update_data: UpdatePayments, check_data: CheckSessionAccessToken) -> PaymentsOut:
+        ...
+
+    async def get_payments_by_user_id(self, check_data: CheckSessionAccessToken) -> Optional[List[PaymentsOut]]:
+        ...
+
+    async def get_payments_by_id(self, payments_id: str, check_data: CheckSessionAccessToken) -> Optional[PaymentsOut]:
+        ...
+
+    async def get_payments_by_idempotency_id(self, idempotency_id: str, check_data: CheckSessionAccessToken) -> \
+            Optional[PaymentsOut]:
+        ...
+
+
+class AsyncApiPaymentService(Protocol):
+
+    async def create_payment(self):
         ...

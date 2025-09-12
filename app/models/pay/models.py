@@ -55,7 +55,7 @@ class Payments(Base):
         Index("idx_payments_user_status", "user_id", "status"),
 
         # частичный уникальный индекс: уникальность только для ненулевых ключей
-        # (предотвращает дублирование idempotency_key, но позволяет NULLы)
+        # (предотвращает дублирование idempotency_key, но позволяет NULL)
         Index(
             "uq_payments_idempotency_not_null",
             "idempotency_key",

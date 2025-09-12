@@ -15,7 +15,6 @@ class CreateWallets(BaseModel):
 class UpdateWallets(BaseModel):
     id: int = Field(..., alias="Id")
     amount: Decimal = Field(..., alias="Amount")
-    reason: Optional[str] = Field(None, alias="Reason")
 
     class Config:
         validate_by_name = True
@@ -46,12 +45,44 @@ class OutWallets(BaseModel):
 
 # ---- Request / Input ---- payments
 
-class CreatePayments(BaseModel):
+class CreatePaymentsService(BaseModel):
     user_id: int = Field(..., alias="UserId")
+    wallet_id: int = Field(..., alias="WalletId")
     amount: Decimal = Field(..., alias="Amount")
     return_url: str = Field(..., alias="ReturnUrl")
+    confirmation_type: Optional[str] = Field(None, alias="ConfirmationType")
     description: Optional[str] = Field(None, alias="Description")
     currency: str = Field(..., alias="Currency")
+    capture: bool = Field(..., alias="Capture")
+    metadata_payments: Optional[dict] = Field(None, alias="MetadataPayments")
+
+    class Config:
+        validate_by_name = True
+
+
+class CreatePayments(BaseModel):
+    user_id: int = Field(..., alias="UserId")
+    wallet_id: int = Field(..., alias="WalletId")
+    amount: Decimal = Field(..., alias="Amount")
+    return_url: str = Field(..., alias="ReturnUrl")
+    confirmation_type: Optional[str] = Field(None, alias="ConfirmationType")
+    description: Optional[str] = Field(None, alias="Description")
+    currency: str = Field(..., alias="Currency")
+    capture: bool = Field(..., alias="Capture")
+    metadata_payments: Optional[dict] = Field(None, alias="MetadataPayments")
+    idempotency_key: str = Field(..., alias="IdempotencyKey")
+
+    class Config:
+        validate_by_name = True
+
+
+class CreatePaymentsApi(BaseModel):
+    amount: Decimal = Field(..., alias="Amount")
+    return_url: str = Field(..., alias="ReturnUrl")
+    confirmation_type: Optional[str] = Field(None, alias="ConfirmationType")
+    description: Optional[str] = Field(None, alias="Description")
+    currency: str = Field(..., alias="Currency")
+    capture: bool = Field(..., alias="Capture")
     metadata_payments: Optional[dict] = Field(None, alias="MetadataPayments")
 
     class Config:
@@ -62,14 +93,16 @@ class UpdatePayments(BaseModel):
     id: str = Field(..., alias="Id")
     status: str = Field(..., alias="Status")
     confirmation_url: Optional[str] = Field(None, alias="ConfirmationUrl")
-    closed_at: Optional[datetime] = Field(None, alias="ClosedAt")
+    confirmation_type: Optional[str] = Field(None, alias="ConfirmationType")
 
 
 # ---- Response / Output ---- payments
 
 class CreatePaymentsOut(BaseModel):
     id: str = Field(..., alias="Id")
+    user_id: int = Field(..., alias="UserId")
     confirmation_url: Optional[str] = Field(None, alias="ConfirmationUrl")
+    confirmation_type: Optional[str] = Field(None, alias="ConfirmationType")
     status: str = Field(..., alias="Status")
     wallet_id: int = Field(..., alias="WalletId")
     currency: str = Field(..., alias="Currency")
