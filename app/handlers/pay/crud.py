@@ -89,7 +89,7 @@ class PaymentRepository(AsyncPaymentRepository):
 
             created_at=m.created_at,
             updated_at=m.updated_at if m.updated_at else None,
-            closed_at=m.closed_at if m.closed_at else None ,
+            closed_at=m.closed_at if m.closed_at else None,
         )
 
     async def create_payments(self, create_data: CreatePayments) -> CreatePaymentsOut:
@@ -119,10 +119,19 @@ class PaymentRepository(AsyncPaymentRepository):
 
     async def update_payments(self, update_data: UpdatePayments) -> PaymentsOut:
 
+        values = {"status": update_data.status}
+
+        if update_data.payment_id is not None:
+            values["yookassa_payment_id"] = update_data.payment_id
+
+        if update_data.confirmation_type and update_data.confirmation_url:
+            values["confirmation_url"] = update_data.confirmation_url
+            values["confirmation_type"] = update_data.confirmation_type
+
         stmt = (
             update(Payments)
             .where(Payments.id == update_data.id)
-            .values(Payments.status == update_data.status)
+            .values(**values)
             .returning(Payments)
         )
 
@@ -146,7 +155,7 @@ class PaymentRepository(AsyncPaymentRepository):
         return [self._to_dto(r) for r in result] if result else None
 
     async def get_payments_by_id(self, payments_id: str) -> Optional[PaymentsOut]:
-        result = await self.db.get(Payments,payments_id)
+        result = await self.db.get(Payments, payments_id)
         return result if result else None
 
     async def get_payments_by_idempotency_id(self, idempotency_id: str) -> Optional[PaymentsOut]:

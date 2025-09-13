@@ -92,6 +92,7 @@ class CreatePaymentsApi(BaseModel):
 class UpdatePayments(BaseModel):
     id: str = Field(..., alias="Id")
     status: str = Field(..., alias="Status")
+    payment_id: Optional[str] = Field(None, alias="PaymentId")
     confirmation_url: Optional[str] = Field(None, alias="ConfirmationUrl")
     confirmation_type: Optional[str] = Field(None, alias="ConfirmationType")
 

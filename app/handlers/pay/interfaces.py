@@ -58,7 +58,7 @@ class AsyncWalletService(Protocol):
 class AsyncPaymentService(Protocol):
 
     async def create_payments(self, create_data: CreatePaymentsService,
-                              check_data: CheckSessionAccessToken) -> CreatePaymentsOut:
+                              check_data: CheckSessionAccessToken) -> PaymentsOut:
         ...
 
     async def update_payments(self, update_data: UpdatePayments, check_data: CheckSessionAccessToken) -> PaymentsOut:
@@ -74,8 +74,32 @@ class AsyncPaymentService(Protocol):
             Optional[PaymentsOut]:
         ...
 
+    async def webhook_pay(self):
+        ...
+
 
 class AsyncApiPaymentService(Protocol):
 
-    async def create_payment(self):
+    async def find_by_local_payment_id(self, local_payment_id: str, page_limit: int = 50) -> Optional[Dict[str, Any]]:
         ...
+
+    async def get_payments_by_idemp(self, idemp: str) -> Optional[Any]:
+        ...
+
+    async def get_payment(self, payment_id: str) -> Dict[str, Any]:
+        ...
+
+    async def create_payment(
+            self,
+            amount: Any,
+            return_url: str,
+            description: str,
+            user_id: str,
+            payment_id: str,
+            idemp: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        ...
+
+
+
+
