@@ -8,6 +8,8 @@ from app.handlers.pay.schemas import OutWallets, CreatePaymentsService, CreatePa
 from app.models import Wallet, Payments
 
 
+# официальная библиотека YooKassa
+
 class WalletRepository(AsyncWalletRepository):
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -76,7 +78,7 @@ class PaymentRepository(AsyncPaymentRepository):
         if isinstance(m, type):
             raise TypeError(f"_to_dto получил класс {m!r}, ожидается экземпляр User")
         return PaymentsOut(
-            id=m.id,
+            id=str(m.id),
             user_id=m.user_id,
             wallet_id=m.wallet_id,
             amount=m.amount_value,
@@ -109,7 +111,8 @@ class PaymentRepository(AsyncPaymentRepository):
         await self.db.flush()
 
         return CreatePaymentsOut(
-            id=m.id,
+            id=str(m.id),
+            user_id=m.user_id,
             confirmation_url=m.confirmation_url,
             confirmation_type=m.confirmation_type,
             status=m.status,
@@ -153,6 +156,22 @@ class PaymentRepository(AsyncPaymentRepository):
         result = await self.db.execute(q)
         result = result.scalars().all()
         return [self._to_dto(r) for r in result] if result else None
+
+    async def get_payments_by_user_id_last(self, user_id: int) -> Optional[PaymentsOut]:
+
+        q = (
+            select(Payments)
+            .where(
+                (Payments.user_id == user_id) &
+                (Payments.status != "canceled")
+            )
+            .order_by(Payments.created_at.desc())
+        )
+        result = await self.db.execute(q)
+        result = result.scalars().first()
+
+        return self._to_dto(result) if result else None
+
 
     async def get_payments_by_id(self, payments_id: str) -> Optional[PaymentsOut]:
         result = await self.db.get(Payments, payments_id)

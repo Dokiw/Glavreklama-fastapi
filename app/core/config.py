@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     DB_ENGINE: str
     DB_TYPE: str
 
+    SECRET_KEY: str
+    SHOP_ID: str
+
     class Config:
         env_file = ENV_PATH  # чтобы pydantic тоже читал из .env
 

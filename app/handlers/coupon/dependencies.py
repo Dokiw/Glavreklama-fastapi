@@ -8,13 +8,13 @@ from app.handlers.auth.dependencies import RoleServiceDep
 
 from app.handlers.session.dependencies import SessionServiceDep
 
-from app.handlers.coupon.UOW import SqlAlchemyUnitOfWork, IUnitOfWorkWallet
+from app.handlers.coupon.UOW import SqlAlchemyUnitOfWork, IUnitOfWorkCoupon
 from app.handlers.coupon.interfaces import AsyncCouponService
 from app.handlers.coupon.service import SqlAlchemyCoupon
 
 
 # фабрика UnitOfWork
-async def get_uow(db: AsyncSession = Depends(get_db)) -> IUnitOfWorkWallet:
+async def get_uow(db: AsyncSession = Depends(get_db)) -> IUnitOfWorkCoupon:
     async with SqlAlchemyUnitOfWork(lambda: db) as uow:
         yield uow
 
@@ -23,7 +23,7 @@ async def get_uow(db: AsyncSession = Depends(get_db)) -> IUnitOfWorkWallet:
 def get_session_service(
         session_service: SessionServiceDep,
         role_service: RoleServiceDep,
-        uow: IUnitOfWorkWallet = Depends(get_uow)
+        uow: IUnitOfWorkCoupon = Depends(get_uow)
 ) -> AsyncCouponService:
     return SqlAlchemyCoupon(session_service=session_service, uow=uow, role_service=role_service)
 

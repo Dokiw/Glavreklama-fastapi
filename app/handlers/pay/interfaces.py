@@ -42,6 +42,9 @@ class AsyncPaymentRepository(Protocol):
     async def get_payments_by_idempotency_id(self, idempotency_id: str) -> Optional[PaymentsOut]:
         ...
 
+    async def get_payments_by_user_id_last(self, user_id: int) -> Optional[PaymentsOut]:
+        ...
+
 
 class AsyncWalletService(Protocol):
     async def create_wallet_or_get_wallet(self, check_data: CheckSessionAccessToken) -> OutWallets:
@@ -54,11 +57,14 @@ class AsyncWalletService(Protocol):
     async def get_wallet_by_id(self, id: int, check_data: CheckSessionAccessToken) -> Optional[OutWallets]:
         ...
 
+    async def update_wallets_user_internal(self, update_data: UpdateWalletsService) -> OutWallets:
+        ...
 
 class AsyncPaymentService(Protocol):
 
     async def create_payments(self, create_data: CreatePaymentsService,
-                              check_data: CheckSessionAccessToken) -> PaymentsOut:
+                              check_data: CheckSessionAccessToken) -> (
+            CreatePaymentsOut | PaymentsOut):
         ...
 
     async def update_payments(self, update_data: UpdatePayments, check_data: CheckSessionAccessToken) -> PaymentsOut:
@@ -86,7 +92,7 @@ class AsyncApiPaymentService(Protocol):
     async def get_payments_by_idemp(self, idemp: str) -> Optional[Any]:
         ...
 
-    async def get_payment(self, payment_id: str) -> Dict[str, Any]:
+    async def get_payments(self, created_at) -> List[Dict[str, Any]]:
         ...
 
     async def create_payment(
@@ -99,7 +105,3 @@ class AsyncApiPaymentService(Protocol):
             idemp: Optional[str] = None,
     ) -> Dict[str, Any]:
         ...
-
-
-
-

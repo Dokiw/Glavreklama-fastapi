@@ -1,5 +1,7 @@
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, Union
+from uuid import UUID
+
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 
@@ -72,8 +74,9 @@ class CreatePayments(BaseModel):
     metadata_payments: Optional[dict] = Field(None, alias="MetadataPayments")
     idempotency_key: str = Field(..., alias="IdempotencyKey")
 
-    class Config:
-        validate_by_name = True
+    model_config = {
+        "populate_by_name": True,
+    }
 
 
 class CreatePaymentsApi(BaseModel):
@@ -90,11 +93,14 @@ class CreatePaymentsApi(BaseModel):
 
 
 class UpdatePayments(BaseModel):
-    id: str = Field(..., alias="Id")
+    id: Union[str, UUID] = Field(..., alias="Id")
     status: str = Field(..., alias="Status")
     payment_id: Optional[str] = Field(None, alias="PaymentId")
     confirmation_url: Optional[str] = Field(None, alias="ConfirmationUrl")
     confirmation_type: Optional[str] = Field(None, alias="ConfirmationType")
+
+    class Config:
+        validate_by_name = True
 
 
 # ---- Response / Output ---- payments
@@ -107,6 +113,9 @@ class CreatePaymentsOut(BaseModel):
     status: str = Field(..., alias="Status")
     wallet_id: int = Field(..., alias="WalletId")
     currency: str = Field(..., alias="Currency")
+
+    class Config:
+        validate_by_name = True
 
 
 class PaymentsOut(BaseModel):
@@ -124,3 +133,6 @@ class PaymentsOut(BaseModel):
     created_at: datetime = Field(..., alias="CreateAt")
     updated_at: Optional[datetime] = Field(None, alias="UpdatedAt")
     closed_at: Optional[datetime] = Field(None, alias="ClosedAt")
+
+    class Config:
+        validate_by_name = True
