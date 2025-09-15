@@ -1,8 +1,10 @@
+
+
 from app.handlers.auth.dto import UserAuthData
 from app.handlers.auth.schemas import OutUser, UserCreate, RoleUser, UserCreateProvide
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.handlers.auth.interfaces import AsyncUserRepository, AsyncRoleRepository
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 from app.models.auth.models import User as UserModel, Role as RoleModel
 
 from typing import TYPE_CHECKING, Optional, List
@@ -87,6 +89,18 @@ class UserRepository(AsyncUserRepository):
             first_name=user.first_name,
         )
 
+    async def update_role_users(self, user_id: int, role_id: int) -> OutUser:
+        stmt = (
+            update(UserModel)
+            .where(UserModel.id == user_id)
+            .values(role_id = role_id)
+            .returning(UserModel)
+        )
+        result = await self.db.execute(stmt)
+        result = result.scalar_one_or_none()
+
+        return self._to_dto(result) if result else None
+
 
 class RoleRepository(AsyncRoleRepository):  # Исправлено наследование
     def __init__(self, db: AsyncSession):
@@ -107,3 +121,10 @@ class RoleRepository(AsyncRoleRepository):  # Исправлено наслед�
         if role is None:
             return None
         return RoleUser(name=role.name, description=role.description)
+
+    async def get_roles(self) -> List[Optional[RoleUser]]:
+        q = select(RoleModel)
+        result = await self.db.execute(q)
+        role = result.scalars().all()
+        return [RoleUser(role_id=r.id, name=r.name, description=r.description) for r in role]
+

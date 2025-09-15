@@ -64,9 +64,13 @@ class OutUser(BaseModel):
 
 
 class RoleUser(BaseModel):
+    role_id: Optional[int] = Field(None, alias="RoleId")
     name: str
     description: Optional[str] = None
 
+    class Config:
+        validate_by_name = True
+        from_attributes = True
 
 class PaginateUser(BaseModel):
     users: List[OutUser]

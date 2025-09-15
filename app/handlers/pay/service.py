@@ -169,11 +169,11 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
 
             # --- idempotence: from headers or payload.metadata ---
             idemp = (
-                    headers.get("Idempotence-Key")
-                    or headers.get("Idempotence-key")
-                    or headers.get("idempotence-key")
-                    or payment_obj.get("metadata", {}).get("idempotence_key")
-                    or payload.get("metadata", {}).get("idempotence_key")
+                headers.get("Idempotence-Key")
+                or headers.get("Idempotence-key")
+                or headers.get("idempotence-key")
+                or payment_obj.get("metadata", {}).get("idempotence_key")
+                or payload.get("metadata", {}).get("idempotence_key")
             )
             logger.debug("Webhook: extracted idempotence: %s", idemp)
 

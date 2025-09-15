@@ -8,6 +8,7 @@ from app.handlers.auth.schemas import LogInUser, UserCreate, LogOutUser, AuthRes
 from app.handlers.auth.dependencies import AuthServiceDep, get_auth_service_dep, get_auth_service
 from app.handlers.auth.service import SqlAlchemyAuth
 from app.handlers.providers.schemas import ProviderLoginRequest
+from app.handlers.session.schemas import CheckSessionAccessToken
 from app.method.get_token import get_token
 from app.method.initdatatelegram import check_telegram_init_data
 
@@ -103,3 +104,45 @@ async def get_users(
 
     return await auth_service.get_users(id_user=id_user, ip=ip, offset=offset, limit=limit,
                                         user_agent=user_agent, access_token=access_token)
+
+
+@router.post("/get_roles", response_model=List[Optional[RoleUser]])
+async def get_roles(
+        auth_service: AuthServiceDep,
+        user_id: int,
+        request: Request,
+        access_token: str = Depends(get_token),
+):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "")
+
+    csat = CheckSessionAccessToken(
+        user_id=user_id,
+        ip_address=ip,
+        user_agent=user_agent,
+        access_token=access_token,
+    )
+
+    return await auth_service.get_roles(check_data=csat)
+
+
+@router.post("/update_role")
+async def update_role(
+        auth_service: AuthServiceDep,
+        role_id: int,
+        user_id: int,
+        request: Request,
+        access_token: str = Depends(get_token),
+):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "")
+
+    csat = CheckSessionAccessToken(
+        user_id=user_id,
+        ip_address=ip,
+        user_agent=user_agent,
+        access_token=access_token,
+    )
+
+    return await auth_service.update_role(role_id=role_id, check_data=csat)
+

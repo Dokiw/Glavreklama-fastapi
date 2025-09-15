@@ -28,23 +28,20 @@ async def hub():
     return {"status": True}
 
 
-
-
-
 @router.post("/create_payment", response_model=Optional[CreatePaymentsOut])
 async def create_payment(
-    user_id: int,
-    wallet_id: int,
-    amount: float,
-    return_url: str,
-    payment_service: paymentServiceDep,
-    confirmation_type: Optional[str] = None,
-    description: Optional[str] = None,
-    currency: Optional[str] = "RUB",
-    capture: Optional[bool] = True,
-    metadata_payments: Optional[Dict[str, Any]] = None,
-    request: Request = None,
-    access_token: str = Depends(get_token),
+        user_id: int,
+        wallet_id: int,
+        amount: float,
+        return_url: str,
+        payment_service: paymentServiceDep,
+        confirmation_type: Optional[str] = None,
+        description: Optional[str] = None,
+        currency: Optional[str] = "RUB",
+        capture: Optional[bool] = True,
+        metadata_payments: Optional[Dict[str, Any]] = None,
+        request: Request = None,
+        access_token: str = Depends(get_token),
 ):
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -73,11 +70,11 @@ async def create_payment(
 
 @router.post("/update_payment", response_model=Optional[PaymentsOut])
 async def update_payment(
-    payment_service: paymentServiceDep,
-    update_data: UpdatePayments = Body(...),
-    user_id: int = None,
-    request: Request = None,
-    access_token: str = Depends(get_token),
+        payment_service: paymentServiceDep,
+        update_data: UpdatePayments = Body(...),
+        user_id: int = None,
+        request: Request = None,
+        access_token: str = Depends(get_token),
 ):
     """
     update_data: передаём UpdatePayments (в body) — содержит id и поля для обновления.
@@ -98,10 +95,10 @@ async def update_payment(
 
 @router.post("/get_by_user_id", response_model=Optional[List[PaymentsOut]])
 async def get_by_user_id(
-    payment_service: paymentServiceDep,
-    user_id: int,
-    request: Request,
-    access_token: str = Depends(get_token),
+        payment_service: paymentServiceDep,
+        user_id: int,
+        request: Request,
+        access_token: str = Depends(get_token),
 ):
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -118,11 +115,11 @@ async def get_by_user_id(
 
 @router.post("/get_by_id", response_model=Optional[PaymentsOut])
 async def get_by_id(
-    payment_service: paymentServiceDep,
-    payments_id: str,
-    user_id: int,
-    request: Request,
-    access_token: str = Depends(get_token),
+        payment_service: paymentServiceDep,
+        payments_id: str,
+        user_id: int,
+        request: Request,
+        access_token: str = Depends(get_token),
 ):
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -139,11 +136,11 @@ async def get_by_id(
 
 @router.post("/get_by_idempotency", response_model=Optional[PaymentsOut])
 async def get_by_idempotency(
-    payment_service: paymentServiceDep,
-    idempotency_id: str,
-    user_id: int,
-    request: Request,
-    access_token: str = Depends(get_token),
+        payment_service: paymentServiceDep,
+        idempotency_id: str,
+        user_id: int,
+        request: Request,
+        access_token: str = Depends(get_token),
 ):
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -160,8 +157,8 @@ async def get_by_idempotency(
 
 @router.post("/webhook", response_model=Optional[PaymentsOut])
 async def webhook(
-    payment_service: paymentServiceDep,
-    request: Request,
+        payment_service: paymentServiceDep,
+        request: Request,
 ):
     """
     Вебхук от провайдера — без проверки токена.
@@ -185,13 +182,12 @@ async def webhook(
     return result
 
 
-
-@router.post("/create_or_get_wallet", response_model = Optional[OutWallets])
+@router.post("/create_or_get_wallet", response_model=Optional[OutWallets])
 async def create_or_get_wallet(
-    wallet_service: walletServiceDep,
-    user_id: int,
-    request: Request,
-    access_token: str = Depends(get_token),
+        wallet_service: walletServiceDep,
+        user_id: int,
+        request: Request,
+        access_token: str = Depends(get_token),
 ):
     """
     Создать кошелёк для user_id, либо вернуть существующий.
@@ -209,13 +205,13 @@ async def create_or_get_wallet(
     return await wallet_service.create_wallet_or_get_wallet(check_data=csat)
 
 
-@router.post("/update_wallet", response_model = Optional[OutWallets])
+@router.post("/update_wallet", response_model=Optional[OutWallets])
 async def update_wallet(
-    wallet_service: walletServiceDep,
-    update_data: UpdateWalletsService = Body(...),
-    admin_user_id: int = None,
-    request: Request = None,
-    access_token: str = Depends(get_token),
+        wallet_service: walletServiceDep,
+        update_data: UpdateWalletsService = Body(...),
+        admin_user_id: int = None,
+        request: Request = None,
+        access_token: str = Depends(get_token),
 ):
     """
     Обновление баланса кошелька (admin-like operation).
@@ -235,13 +231,13 @@ async def update_wallet(
     return await wallet_service.update_wallets_user(update_data=update_data, check_data=csat)
 
 
-@router.post("/get_wallet_by_id", response_model = Optional[OutWallets])
+@router.post("/get_wallet_by_id", response_model=Optional[OutWallets])
 async def get_wallet_by_id(
-    wallet_service: walletServiceDep,
-    id: int,
-    user_id: int,
-    request: Request,
-    access_token: str = Depends(get_token),
+        wallet_service: walletServiceDep,
+        id: int,
+        user_id: int,
+        request: Request,
+        access_token: str = Depends(get_token),
 ):
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")

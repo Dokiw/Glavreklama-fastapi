@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     DB_ENGINE: str
     DB_TYPE: str
 
+    CHATGPT_API: str
+
     SECRET_KEY: str
     SHOP_ID: str
 

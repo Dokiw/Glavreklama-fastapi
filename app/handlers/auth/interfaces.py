@@ -19,6 +19,12 @@ class AsyncRoleRepository(Protocol):
     async def get_by_user_id(self, id_user: int) -> Optional[RoleUser]:
         ...
 
+    async def create_role(self, role_data: RoleUser) -> Optional[RoleUser]:
+        ...
+
+    async def get_roles(self) -> List[Optional[RoleUser]]:
+        ...
+
 
 # для работы с пользователем
 class AsyncUserRepository(Protocol):
@@ -43,6 +49,9 @@ class AsyncUserRepository(Protocol):
         ...
 
     async def count_users(self) -> int:
+        ...
+
+    async def update_role_users(self, user_id: int, role_id: int) -> OutUser:
         ...
 
 
@@ -74,9 +83,18 @@ class AsyncAuthService(Protocol):
             Optional)[List[OutUser]]:
         ...
 
+    async def update_role(self, role_id: int, check_data: CheckSessionAccessToken) -> Optional[OutUser]:
+        ...
+
+    async def get_roles(self, check_data: CheckSessionAccessToken) -> List[Optional[RoleUser]]:
+        ...
+
 
 class AsyncRoleService(Protocol):
     """Сервис авторизации/аутентификации. - вспомогательный"""
 
     async def is_admin(self, id_user: int) -> bool:
+        ...
+
+    async def get_roles_include(self) -> List[Optional[RoleUser]]:
         ...

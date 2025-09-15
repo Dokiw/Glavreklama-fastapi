@@ -10,12 +10,14 @@ from app.core.abs.unit_of_work import IUnitOfWorkAuth
 from app.core.config import settings
 from app.handlers.auth.dto import UserAuthData
 from app.handlers.auth.interfaces import AsyncAuthService, AsyncRoleService
-from app.handlers.auth.schemas import PaginateUser, LogInUser, RoleUser, AuthResponse, OutUser, Token, UserCreate, UserCreateProvide, \
+from app.handlers.auth.schemas import PaginateUser, LogInUser, RoleUser, AuthResponse, OutUser, Token, UserCreate, \
+    UserCreateProvide, \
     AuthResponseProvide
 from app.handlers.providers.schemas import ProviderRegisterRequest, ProviderLoginRequest, ProviderOut
 from app.handlers.session.interfaces import AsyncSessionService
 from app.handlers.session.schemas import OpenSession, CheckSessionAccessToken, OutSession
 from app.handlers.providers.interfaces import AsyncProvidersService
+from app.method.decorator import transactional
 from app.method.initdatatelegram import check_telegram_init_data
 
 
@@ -352,6 +354,20 @@ class SqlAlchemyAuth(AsyncAuthService):
         )
         return pag_user
 
+    @transactional()
+    async def update_role(self, role_id: int, check_data: CheckSessionAccessToken) -> Optional[OutUser]:
+        await self.role_service.is_admin(check_data.user_id)
+        await self.session_service.validate_access_token_session(check_data)
+
+        result = await self.uow.user_repo.update_role_users(user_id=check_data.user_id, role_id=role_id)
+
+        return result
+
+    @transactional()
+    async def get_roles(self, check_data: CheckSessionAccessToken) -> List[Optional[RoleUser]]:
+        await self.role_service.is_admin(check_data.user_id)
+        return await self.role_service.get_roles_include()
+
 
 class SqlAlchemyRole(AsyncRoleService):
     def __init__(self, uow: IUnitOfWorkAuth):
@@ -379,3 +395,8 @@ class SqlAlchemyRole(AsyncRoleService):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Внутренняя ошибка сервера: {str(e)}"
             )
+
+    @transactional()
+    async def get_roles_include(self) -> List[Optional[RoleUser]]:
+        result = await self.uow.role.get_roles()
+        return result
