@@ -4,7 +4,7 @@ from app.handlers.auth.schemas import (
     OutUser,
     UserCreate,
     LogInUser,
-    AuthResponse, AuthResponseProvide, UserCreateProvide
+    AuthResponse, AuthResponseProvide, UserCreateProvide, LogInUserBot
 )
 from app.handlers.auth.dto import UserAuthData
 from app.handlers.providers.schemas import ProviderRegisterRequest, ProviderLoginRequest
@@ -58,6 +58,10 @@ class AsyncUserRepository(Protocol):
 # для аунтификации и авторизации
 class AsyncAuthService(Protocol):
     """Сервис авторизации/аутентификации."""
+
+    async def login_via_bots(self, login_data: LogInUserBot, ip: str,
+                             user_agent: str) -> AuthResponse:
+        ...
 
     async def login(self, login_data: LogInUser, ip: str,
                     user_agent: str, oauth_client: str) -> AuthResponse:  # например возвращает токен + user

@@ -4,10 +4,11 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.handlers.session.service import SqlAlchemyServiceRefreshToken, SqlAlchemyServiceSession
+from app.handlers.session.service import SqlAlchemyServiceRefreshToken, SqlAlchemyServiceSession, \
+    SqlAlchemyServiceOauthClient
 from app.handlers.session.UOW import SqlAlchemyUnitOfWork, IUnitOfWorkSession
 from app.handlers.session.crud import SessionRepository, RefreshTokenRepository
-from app.handlers.session.interfaces import AsyncSessionService, AsyncRefreshTokenService
+from app.handlers.session.interfaces import AsyncSessionService, AsyncRefreshTokenService, AsyncOauthClientService
 
 
 # фабрика UnitOfWork
@@ -21,12 +22,17 @@ def get_refresh_service(uow: IUnitOfWorkSession = Depends(get_uow)) -> AsyncRefr
     return SqlAlchemyServiceRefreshToken(uow)
 
 
+def get_oauth_service(uow: IUnitOfWorkSession = Depends(get_uow)) -> AsyncOauthClientService:
+    return SqlAlchemyServiceOauthClient(uow)
+
+
 # фабрика сервиса сессий
 def get_session_service(
-    uow: IUnitOfWorkSession = Depends(get_uow),
-    refresh_service: AsyncRefreshTokenService = Depends(get_refresh_service),
+        uow: IUnitOfWorkSession = Depends(get_uow),
+        refresh_service: AsyncRefreshTokenService = Depends(get_refresh_service),
+        oauth_client: AsyncOauthClientService = Depends(get_oauth_service)
 ) -> AsyncSessionService:
-    return SqlAlchemyServiceSession(uow, refresh_service)
+    return SqlAlchemyServiceSession(uow, refresh_service, oauth_client)
 
 
 # alias для роутов

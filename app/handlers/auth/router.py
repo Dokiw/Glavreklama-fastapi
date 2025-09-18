@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends, Header, Request, Body, Fo
 
 from app.core.config import settings
 from app.handlers.auth.schemas import LogInUser, UserCreate, LogOutUser, AuthResponse, RoleUser, InitDataRequest, \
-    AuthResponseProvide, OutUser, PaginateUser
+    AuthResponseProvide, OutUser, PaginateUser, LogInUserBot
 from app.handlers.auth.dependencies import AuthServiceDep, get_auth_service_dep, get_auth_service
 from app.handlers.auth.service import SqlAlchemyAuth
 from app.handlers.providers.schemas import ProviderLoginRequest
@@ -32,6 +32,19 @@ async def login(
     user_agent = request.headers.get("user-agent", "")
 
     return await auth_service.login(log_in_user, ip, user_agent=user_agent, oauth_client=oauth_client)
+
+
+@router.post("/login_via_bots", response_model=AuthResponse)
+async def login_via_bots(
+        log_in_user: LogInUserBot,
+        request: Request,
+        auth_service: AuthServiceDep
+):
+    # Получаем IP и User-Agent из запроса
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "")
+
+    return await auth_service.login_via_bots(log_in_user, ip, user_agent=user_agent)
 
 
 @router.post("/register", response_model=AuthResponse)
@@ -145,4 +158,3 @@ async def update_role(
     )
 
     return await auth_service.update_role(role_id=role_id, check_data=csat)
-

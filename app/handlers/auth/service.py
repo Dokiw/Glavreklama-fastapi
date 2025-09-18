@@ -12,10 +12,10 @@ from app.handlers.auth.dto import UserAuthData
 from app.handlers.auth.interfaces import AsyncAuthService, AsyncRoleService
 from app.handlers.auth.schemas import PaginateUser, LogInUser, RoleUser, AuthResponse, OutUser, Token, UserCreate, \
     UserCreateProvide, \
-    AuthResponseProvide
+    AuthResponseProvide, LogInUserBot
 from app.handlers.providers.schemas import ProviderRegisterRequest, ProviderLoginRequest, ProviderOut
-from app.handlers.session.interfaces import AsyncSessionService
-from app.handlers.session.schemas import OpenSession, CheckSessionAccessToken, OutSession
+from app.handlers.session.interfaces import AsyncSessionService, AsyncOauthClientService
+from app.handlers.session.schemas import OpenSession, CheckSessionAccessToken, OutSession, CheckOauthClient
 from app.handlers.providers.interfaces import AsyncProvidersService
 from app.method.decorator import transactional
 from app.method.initdatatelegram import check_telegram_init_data
@@ -31,12 +31,61 @@ class SqlAlchemyAuth(AsyncAuthService):
             session_service: AsyncSessionService,
             provide_user: AsyncProvidersService,
             role_service: AsyncRoleService,
-
+            oauth_client_service: AsyncOauthClientService
     ):
         self.uow = uow
         self.session_service = session_service
         self.provide_user = provide_user
         self.role_service = role_service
+        self.oauth_client_service = oauth_client_service
+
+    @transactional()
+    async def login_via_bots(self, login_data: LogInUserBot, ip: str,
+                             user_agent: str) -> AuthResponse:
+        auth: Optional[UserAuthData] = await self.uow.user_repo.get_auth_data(login_data.username)
+
+        provider_login = ProviderLoginRequest(
+            provider="telegram",
+            provider_user_id=str(login_data.provider_user_id),
+        )
+
+        auth_provide: Optional[ProviderOut] = await self.provide_user.login_provider_user(provider_login)
+
+        await self.oauth_client_service.check_oauth_client(
+            check_data=CheckOauthClient(client_id=str(login_data.client_id),
+                                        client_secret=str(login_data.client_secret)))
+
+        if str(auth_provide.provider_user_id) != str(login_data.provider_user_id):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail=f"Invalid gleb")
+
+        # выкидываем если нет пользователя и данных
+        if not auth:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+        session = await self.session_service.open_session(OpenSession(
+            user_id=auth.id,
+            client_id=login_data.client_id,
+            ip_address=ip,
+            user_agent=user_agent,
+        ))
+
+        # Формируем OutUser напрямую из auth (полей dataclass)
+        out = OutUser(
+            id=auth.id,
+            username=auth.user_name,
+            email=auth.email,
+            first_name=auth.first_name,
+            last_name=auth.last_name,
+            role_id=auth.role_id,
+        )
+
+        token = Token(
+            access_token=session.access_token,
+            refresh_token=session.refresh_token
+        )
+
+        return AuthResponse(user_data=out, token=token)
 
     async def login(self, login_data: LogInUser, ip: str, user_agent: str, oauth_client: str) -> AuthResponse:
         try:
@@ -64,6 +113,7 @@ class SqlAlchemyAuth(AsyncAuthService):
                     email=auth.email,
                     first_name=auth.first_name,
                     last_name=auth.last_name,
+                    role_id=auth.role_id,
                 )
 
                 # todo - Проверить надо работу сессий

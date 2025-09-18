@@ -6,9 +6,11 @@ from pydantic import BaseModel, EmailStr, Field
 # ---- Request / Input ---- SESSION
 class OpenSession(BaseModel):
     user_id: int = Field(..., alias="userId")
-    client_id: Optional[str] = Field(None, alias="clientId")
     id_address: Optional[str] = Field(None, alias="ipAddress")
     user_agent: Optional[str] = Field(None, alias="userAgent")
+
+    client_id: Optional[str] = Field(None, alias="clientId")
+    client_secret: Optional[str] = Field(None, alias="clientSecret")
 
     class Config:
         validate_by_name = True
@@ -162,10 +164,6 @@ class UpdateOauthClient(BaseModel):
 class CheckOauthClient(BaseModel):
     client_id: str = Field(..., alias="ClientId")
     client_secret: Optional[str] = Field(None, alias="ClientSecret")
-    grant_types: Optional[str] = Field(None, alias="GrantType")
-    redirect_url: Optional[str] = Field(None, alias="RedirectUrl")
-    scopes: Optional[list[str]] = Field(None, alias="Scopes")
-    is_confidential: Optional[bool] = Field(None, alias="IsConfidential")
 
     class Config:
         validate_by_name = True

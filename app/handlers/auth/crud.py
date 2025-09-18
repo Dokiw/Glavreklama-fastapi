@@ -28,7 +28,8 @@ class UserRepository(AsyncUserRepository):
             username=m.user_name,
             email=m.email,
             first_name=m.first_name,
-            last_name=m.last_name
+            last_name=m.last_name,
+            role_id = m.role_id,
         )
 
     async def create_user(self, user_in: UserCreate) -> OutUser:
@@ -87,6 +88,7 @@ class UserRepository(AsyncUserRepository):
             email=user.email,
             last_name=user.last_name,
             first_name=user.first_name,
+            role_id=user.role_id
         )
 
     async def update_role_users(self, user_id: int, role_id: int) -> OutUser:

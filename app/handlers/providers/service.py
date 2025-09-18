@@ -27,12 +27,12 @@ class ProviderUserRepository(AsyncProvidersService):
     async def login_provider_user(self, login_data: ProviderLoginRequest) -> Optional[ProviderOut]:
         try:
             async with self.uow:
-                provide: Optional[ProviderOut] = await self.uow.provider.get_by_provider_and_user_id(login_data)
+                provide: Optional[ProviderOut] = await self.uow.provider.get_by_provider_and_user_id(provider=login_data.provider, provider_user_id= login_data.provider_user_id)
 
                 if provide is None:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Ошибка целостности данных"
+                        detail=f"Ошибка целостности данных "
                     )
 
         except HTTPException:

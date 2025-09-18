@@ -21,9 +21,11 @@ from app.handlers.session.schemas import OpenSession, OutSession, CheckOauthClie
 
 # todo: заменить генерацию токена на безопасную для продакшена
 class SqlAlchemyServiceSession(AsyncSessionService):
-    def __init__(self, uow: IUnitOfWorkSession, refresh_service: AsyncRefreshTokenService):
+    def __init__(self, uow: IUnitOfWorkSession, refresh_service: AsyncRefreshTokenService,
+                 oauth_client: AsyncOauthClientService):
         self.uow = uow
         self.refresh_service = refresh_service
+        self.oauth_client = oauth_client
 
     async def get_oauth_by_client(self, client_id: str) -> Optional[OutSession]:
         try:
@@ -141,6 +143,7 @@ class SqlAlchemyServiceSession(AsyncSessionService):
         OutSession]:
         try:
             async with self.uow:
+
                 session = await self.uow.sessions.get_by_access_token_session(check_access_token_data.access_token)
 
                 if session is None:
@@ -512,37 +515,13 @@ class SqlAlchemyServiceOauthClient(AsyncOauthClientService):
                         detail="Ошибка целостности данных"
                     )
 
-                if client_data.is_confidential is not None and client_data.is_confidential != check_data.is_confidential:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Неверно переданы данные"
-                    )
-
                 if check_data.client_secret is not None and client_data.client_secret != check_data.client_secret:
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Неверно переданы данные"
+                        detail=f"Неверно переданы данные"
                     )
+                return client_data
 
-                if client_data.scopes and check_data.scopes:
-                    if set(client_data.scopes) != set(check_data.scopes):
-                        raise HTTPException(
-                            status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="Неверно переданы данные"
-                        )
-
-                if check_data.redirect_url is not None and client_data.redirect_url != check_data.redirect_url:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Неверно переданы данные"
-                    )
-
-                if client_data.grant_types and check_data.grant_types:
-                    if set(client_data.grant_types) != set(check_data.grant_types):
-                        raise HTTPException(
-                            status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="Неверно переданы данные"
-                        )
         except HTTPException:
             # просто пробрасываем дальше, чтобы не превращать в 500
             raise
@@ -551,7 +530,7 @@ class SqlAlchemyServiceOauthClient(AsyncOauthClientService):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Внутренняя ошибка сервера: {str(e)}"
             )
-        return client_data
+
 
     async def close_oauth_client(self, oauth_client_id: int) -> None:
         try:

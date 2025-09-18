@@ -33,7 +33,16 @@ class LogInUser(BaseModel):
     username: str = Field(..., alias="userName")
     password: str = Field(..., alias="passUser")
 
-    client_id: Optional[int] = Field(None, alias="clientId")
+    class Config:
+        validate_by_name = True
+
+
+class LogInUserBot(BaseModel):
+    username: str = Field(..., alias="userName")
+    provider_user_id: int = Field(..., alias="providerUserId")
+
+    client_id: Optional[str] = Field(None, alias="clientId")
+    client_secret: Optional[str] = Field(None, alias="clientSecret")
 
     class Config:
         validate_by_name = True
@@ -57,6 +66,7 @@ class OutUser(BaseModel):
     email: Optional[EmailStr] = None
     first_name: Optional[str] = Field(None, alias="firstName")
     last_name: Optional[str] = Field(None, alias="lastName")
+    role_id: Optional[int] = Field(None, alias="RoleId")
 
     class Config:
         validate_by_name = True
@@ -71,6 +81,7 @@ class RoleUser(BaseModel):
     class Config:
         validate_by_name = True
         from_attributes = True
+
 
 class PaginateUser(BaseModel):
     users: List[OutUser]
