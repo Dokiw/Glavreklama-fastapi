@@ -644,7 +644,7 @@ class SqlAlchemyServicePaymentApi:
             # Первый вариант — попробовать передать idempotence_key как аргумент (некоторые версии SDK поддерживают это)
             if idemp:
                 try:
-                    res = await asyncio.to_thread(Payment.create, paydata, idempotence_key=idemp)
+                    res = await asyncio.to_thread(Payment.create, paydata, idemp)
                 except TypeError:
                     # SDK не принимает idempotence_key в сигнатуре -> fallback
                     res = await asyncio.to_thread(Payment.create, paydata)
@@ -657,3 +657,8 @@ class SqlAlchemyServicePaymentApi:
             print("create_payment error:", e)
             # Можно вернуть структуру с описанием ошибки, чтобы вызывающая сторона не падала
             return {"error": str(e)}
+
+
+
+
+

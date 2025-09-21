@@ -169,7 +169,6 @@ class SqlAlchemyServiceSession(AsyncSessionService):
                     if current_ip not in session_net:
                         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ошибка целостности данных")
 
-
                 # timestamp = str(time()).encode()
                 #
                 # session.access_token = hashlib.sha256(timestamp).hexdigest()
@@ -506,6 +505,7 @@ class SqlAlchemyServiceOauthClient(AsyncOauthClientService):
     async def check_oauth_client(self, check_data: CheckOauthClient) -> Optional[OutOauthClient]:
         try:
             async with self.uow:
+                # TODO - В будущем добавить grand и scope
                 client_data: Optional[OutOauthClient] = await self.uow.oauth_clients.get_by_client_id_oauth(
                     check_data.client_id)
 
@@ -515,11 +515,13 @@ class SqlAlchemyServiceOauthClient(AsyncOauthClientService):
                         detail="Ошибка целостности данных"
                     )
 
-                if check_data.client_secret is not None and client_data.client_secret != check_data.client_secret:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail=f"Неверно переданы данные"
-                    )
+                if client_data.is_confidential:
+                    if client_data.client_secret != check_data.client_secret:
+                        raise HTTPException(
+                            status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail=f"Неверно переданы данные {check_data.client_secret} -- {check_data.client_secret}"
+                        )
+
                 return client_data
 
         except HTTPException:
@@ -530,7 +532,6 @@ class SqlAlchemyServiceOauthClient(AsyncOauthClientService):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Внутренняя ошибка сервера: {str(e)}"
             )
-
 
     async def close_oauth_client(self, oauth_client_id: int) -> None:
         try:
