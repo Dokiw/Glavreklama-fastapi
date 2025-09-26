@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 import ipaddress
 
 from app.core.abs.unit_of_work import IUnitOfWorkSession
+from app.method.decorator import transactional
 from app.models.sessions.models import RefreshToken as RefreshTokenModel
 
 from app.handlers.session.interfaces import AsyncRefreshTokenService, AsyncOauthClientService, AsyncSessionService
@@ -532,6 +533,11 @@ class SqlAlchemyServiceOauthClient(AsyncOauthClientService):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Внутренняя ошибка сервера: {str(e)}"
             )
+
+    @transactional()
+    async def get_by_client_id_oauth(self, client_id: str) -> Optional[OutOauthClient]:
+        result = await self.uow.oauth_clients.get_by_client_id_oauth(client_id)
+        return result
 
     async def close_oauth_client(self, oauth_client_id: int) -> None:
         try:

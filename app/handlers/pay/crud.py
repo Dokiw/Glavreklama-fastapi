@@ -2,15 +2,16 @@ from typing import Optional, List
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, func
-from app.handlers.pay.interfaces import AsyncWalletRepository, AsyncPaymentRepository
+from app.handlers.pay.interfaces import AsyncSubtractionRepository, AsyncPaymentRepository
 from app.handlers.pay.schemas import OutWallets, CreatePaymentsService, CreatePaymentsOut, UpdatePayments, PaymentsOut, \
     CreateWallets, UpdateWalletsService, UpdateWallets, CreatePayments
-from app.models import Wallet, Payments
+from app.models import Wallet, Payments, Subtraction
+from task_celery.pay_task.schemas import SubtractionBase, SubtractionUpdate, SubtractionRead, SubtractionList
 
 
 # официальная библиотека YooKassa
 
-class WalletRepository(AsyncWalletRepository):
+class WalletRepository(AsyncSubtractionRepository):
     def __init__(self, db: AsyncSession):
         self.db = db
 
@@ -172,7 +173,6 @@ class PaymentRepository(AsyncPaymentRepository):
 
         return self._to_dto(result) if result else None
 
-
     async def get_payments_by_id(self, payments_id: str) -> Optional[PaymentsOut]:
         result = await self.db.get(Payments, payments_id)
         return result if result else None
@@ -189,3 +189,64 @@ class PaymentRepository(AsyncPaymentRepository):
         result = await self.db.execute(q)
         result = result.scalar_one_or_none()
         return result
+
+
+class SubtractionRepository(AsyncSubtractionRepository):
+
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    @staticmethod
+    def _to_dto(m: "Subtraction") -> SubtractionRead:
+        if m is None:
+            raise TypeError("_to_dto получил None")
+        if isinstance(m, type):
+            raise TypeError(f"_to_dto получил класс {m!r}, ожидается экземпляр User")
+        return SubtractionRead(
+            id=m.id,
+            user_id=m.user_id,
+            card=m.card,
+            created_at=m.created_at,
+            updated_at=m.updated_at,
+            closed_at=m.closed_at,
+        )
+
+    async def create_subtraction_user(self, create_data: SubtractionBase) -> SubtractionRead:
+        m = Subtraction()
+        m.user_id = create_data.user_id
+        m.card = create_data.card
+
+        self.db.add(m)
+        await self.db.flush()
+        return self._to_dto(m)
+
+    async def get_subtraction_by_id(self, id: int) -> Optional[SubtractionRead]:
+        result = await self.db.get(Subtraction, id)
+        return self._to_dto(result) if result else None
+
+    async def get_subtractions(self, limit: int = 50, offset: int = 0) -> SubtractionList:
+
+
+        return None
+
+    async def get_subtraction_user_by_id(self, user_id: int) -> Optional[SubtractionRead]:
+        q = (
+            select(Subtraction)
+            .where(Subtraction.user_id == user_id)
+            .limit(1)
+        )
+        result = await self.db.execute(q)
+        result = result.scalar_one_or_none()
+        return result
+
+    async def update_subtraction_user(self, update_data: SubtractionUpdate) -> SubtractionRead:
+        stmt = (
+            update(Subtraction)
+            .where(Subtraction.user_id == update_data.user_id)
+            .values(cart=update_data.card)
+            .returning(Payments)
+        )
+
+        result = await self.db.execute(stmt)
+        result = result.scalar_one_or_none()
+        return self._to_dto(result)

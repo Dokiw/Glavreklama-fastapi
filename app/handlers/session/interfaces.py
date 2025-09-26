@@ -116,6 +116,9 @@ class AsyncRefreshTokenService(Protocol):
 
 class AsyncOauthClientService(Protocol):
 
+    async def get_by_client_id_oauth(self, client_id: str) -> Optional[OutOauthClient]:
+        ...
+
     async def create_oauth_client(self, create_oauth_client_data: CreateOauthClient) -> OutOauthClient:
         ...
 

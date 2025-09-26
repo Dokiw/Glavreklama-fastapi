@@ -28,7 +28,6 @@ from app.method.decorator import transactional
 
 
 class SqlAlchemyServicePayment(AsyncPaymentService):
-    # todo - подключить апи
     def __init__(self, uow: IUnitOfWorkPayment, session_service: AsyncSessionService,
                  payment_service_api: AsyncApiPaymentService, wallet_service: AsyncWalletService):
         self.uow = uow

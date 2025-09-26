@@ -37,3 +37,12 @@ def get_session_service(
 
 # alias для роутов
 SessionServiceDep = Annotated[SqlAlchemyServiceSession, Depends(get_session_service)]
+
+
+def get_oauth_client_service(
+        uow: IUnitOfWorkSession = Depends(get_uow),
+) -> AsyncOauthClientService:
+    return SqlAlchemyServiceOauthClient(uow)
+
+
+OauthClientServiceDep = Annotated[SqlAlchemyServiceOauthClient, Depends(get_oauth_client_service)]

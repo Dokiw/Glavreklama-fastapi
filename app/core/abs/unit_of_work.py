@@ -1,15 +1,13 @@
 # app/core/abs/unit_of_work.py
 from abc import ABC, abstractmethod
 from contextlib import AbstractAsyncContextManager
-from typing import Optional
 
 from app.handlers.auth.interfaces import AsyncUserRepository, AsyncRoleRepository
-from app.handlers.pay.interfaces import AsyncWalletRepository, AsyncPaymentRepository
+from app.handlers.coupon.interfaces import AsyncCouponRepository
+from app.handlers.pay.interfaces import AsyncSubtractionRepository, AsyncPaymentRepository
+from app.handlers.providers.interfaces import AsyncProviderRepository
 from app.handlers.session.interfaces import AsyncSessionRepository, AsyncRefreshTokenRepository, \
     AsyncOauthClientRepository
-
-from app.handlers.providers.interfaces import AsyncProviderRepository
-from app.handlers.coupon.interfaces import AsyncCouponRepository
 
 
 class IUnitOfWorkSession(AbstractAsyncContextManager, ABC):
@@ -114,7 +112,22 @@ class IUnitOfWorkPayment(AbstractAsyncContextManager, ABC):
 class IUnitOfWorkWallet(AbstractAsyncContextManager, ABC):
     @property
     @abstractmethod
-    def wallet_repo(self) -> "AsyncWalletRepository":
+    def wallet_repo(self) -> "AsyncSubtractionRepository":
+        pass
+
+    @abstractmethod
+    async def commit(self):
+        pass
+
+    @abstractmethod
+    async def rollback(self):
+        pass
+
+
+class IUnitOfWorkSubtraction(AbstractAsyncContextManager, ABC):
+    @property
+    @abstractmethod
+    def subtraction_repo(self) -> "AsyncSubtractionRepository":
         pass
 
     @abstractmethod

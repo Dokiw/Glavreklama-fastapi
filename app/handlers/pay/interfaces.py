@@ -4,6 +4,25 @@ from app.handlers.pay.schemas import CreatePaymentsOut, PaymentsOut, CreatePayme
     CreateWallets, \
     UpdateWalletsService, OutWallets, UpdateWallets, CreatePayments
 from app.handlers.session.schemas import CheckSessionAccessToken
+from task_celery.pay_task.schemas import SubtractionUpdate, SubtractionBase, SubtractionRead, SubtractionList
+
+
+class AsyncSubtractionRepository(Protocol):
+
+    async def create_subtraction_user(self, create_data: SubtractionBase) -> SubtractionRead:
+        ...
+
+    async def get_subtraction_by_id(self, id: int) -> Optional[SubtractionRead]:
+        ...
+
+    async def get_subtraction_user_by_id(self, user_id: int) -> Optional[SubtractionRead]:
+        ...
+
+    async def get_subtractions(self,limit: int = 50, offset: int = 0) -> SubtractionList:
+        ...
+
+    async def update_subtraction_user(self, update_data: SubtractionUpdate) -> SubtractionRead:
+        ...
 
 
 class AsyncWalletRepository(Protocol):
@@ -59,6 +78,7 @@ class AsyncWalletService(Protocol):
 
     async def update_wallets_user_internal(self, update_data: UpdateWalletsService) -> OutWallets:
         ...
+
 
 class AsyncPaymentService(Protocol):
 

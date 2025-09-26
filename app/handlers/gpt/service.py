@@ -4,21 +4,26 @@ import aiohttp
 from aiohttp import BasicAuth, ClientTimeout
 from app.core.config import settings
 from app.handlers.auth.interfaces import AsyncRoleService
-from app.handlers.session.dependencies import SessionServiceDep
+from app.handlers.gpt.schemas import OutGPTkey
+from app.handlers.session.dependencies import SessionServiceDep, OauthClientServiceDep
 from app.handlers.session.schemas import CheckSessionAccessToken
 from app.handlers.gpt.interfaces import AsyncGPTService
+from app.method.aes import encrypt
+from fastapi import HTTPException, status
 
 
 class SqlAlchemyGPT(AsyncGPTService):
-    def __init__(self, role_service: AsyncRoleService, session_service: SessionServiceDep):
+    def __init__(self, role_service: AsyncRoleService, session_service: SessionServiceDep, oauth_client_service: OauthClientServiceDep):
         self.role_service = role_service
         self.session_service = session_service
+        self.oauth_client_service = oauth_client_service
+
         # Прокси и аутентификация
         self.proxy_url = settings.proxy_url
         self.proxy_auth = BasicAuth(settings.proxy_username, settings.proxy_password) \
             if settings.proxy_username else None
         # Таймаут на весь запрос
-        self.timeout = ClientTimeout(total=30)
+        self.timeout = ClientTimeout(total=120)
 
     async def create_gtp_promt(
         self,
@@ -31,9 +36,9 @@ class SqlAlchemyGPT(AsyncGPTService):
         # 1) Проверки доступа
         await self.role_service.is_admin(check_data.user_id)
         await self.session_service.validate_access_token_session(check_data)
-
         # 2) Данные для запроса OpenAI
-        url = "https://api.openai.com/v1/chat/completions"
+        url = "https://api.openai.com/v1/responses"
+
         api_key = settings.CHATGPT_API
 
         if not api_key:
@@ -44,20 +49,23 @@ class SqlAlchemyGPT(AsyncGPTService):
             "Content-Type": "application/json",
         }
 
-        messages = []
+        input_content = []
+
         if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
+            input_content.append({"type": "input_text", "text": system_prompt})
 
         if image_url:
-            messages.append({
-                "role": "user",
-                "content": f"Посмотри на изображение по ссылке и опиши его: {image_url}"
-            })
+            input_content.append({"type": "input_image", "image_url": image_url, "detail": "high"})
 
         payload = {
             "model": model,
-            "messages": messages,
-            "max_completion_tokens": 1024,
+            "input": [
+                {
+                    "role": "user",
+                    "content": input_content
+                }
+            ],
+            "max_output_tokens": 4096
         }
 
         try:
@@ -85,7 +93,6 @@ class SqlAlchemyGPT(AsyncGPTService):
                             "headers": {k: ("REDACTED" if k.lower() == "authorization" else v) for k, v in headers.items()},
                             "json": payload,
                         },
-                        "api_key": api_key,
                         "proxy": self.proxy_url,
                         "proxy_auth": self.proxy_auth,
                         "error": status >= 400
@@ -102,7 +109,6 @@ class SqlAlchemyGPT(AsyncGPTService):
                     "headers": {k: ("REDACTED" if k.lower() == "authorization" else v) for k, v in headers.items()},
                     "json": payload,
                 },
-                "api_key": api_key,
                 "proxy": self.proxy_url,
                 "proxy_auth": self.proxy_auth,
             }
@@ -114,3 +120,33 @@ class SqlAlchemyGPT(AsyncGPTService):
                 "error": True,
                 "error_message": f"Unexpected error: {e}",
             }
+
+    async def get_property_key(self, oauth_client: str, check_data: CheckSessionAccessToken) \
+            -> OutGPTkey:
+        try:
+            # 1) Проверки доступа
+            await self.role_service.is_admin(check_data.user_id)
+            await self.session_service.validate_access_token_session(check_data)
+
+            oauth_client_data = await self.oauth_client_service.get_by_client_id_oauth(oauth_client)
+            if oauth_client_data.is_confidential and not oauth_client_data.client_secret:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Нету доступа"
+                )
+
+            api_key = settings.CHATGPT_API
+            aes_data = await encrypt(plaintext=api_key, password=oauth_client_data.client_secret)
+
+            return OutGPTkey(
+                user_id=check_data.user_id,
+                data=aes_data
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Внутренняя ошибка сервера: {str(e)}"
+            )
+
+
+

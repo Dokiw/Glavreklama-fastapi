@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.abs.unit_of_work import IUnitOfWorkWallet, IUnitOfWorkPayment
 from app.handlers.pay.crud import WalletRepository, PaymentRepository
-from app.handlers.pay.interfaces import AsyncWalletRepository, AsyncPaymentRepository
+from app.handlers.pay.interfaces import AsyncSubtractionRepository, AsyncPaymentRepository
 
 
 class SqlAlchemyUnitOfWorkWallet(IUnitOfWorkWallet):
@@ -24,7 +24,7 @@ class SqlAlchemyUnitOfWorkWallet(IUnitOfWorkWallet):
         await self._session.close()
 
     @property
-    def wallet_repo(self) -> "AsyncWalletRepository":
+    def wallet_repo(self) -> "AsyncSubtractionRepository":
         return self._wallet_repo
 
     async def commit(self):
