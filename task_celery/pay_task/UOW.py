@@ -7,7 +7,7 @@ from app.handlers.pay.crud import SubtractionRepository
 from app.handlers.pay.interfaces import AsyncSubtractionRepository
 
 
-class SqlAlchemyUnitOfWork(IUnitOfWorkSubtraction):
+class SqlAlchemyUnitOfWorkSubtraction(IUnitOfWorkSubtraction):
     def __init__(self, session_factory):
         self.session_factory = session_factory
         self._session: Optional[AsyncSession] = None

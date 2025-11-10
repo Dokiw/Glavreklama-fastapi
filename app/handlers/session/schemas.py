@@ -177,6 +177,7 @@ class OutOauthClient(BaseModel):
     name: str = Field(..., alias="Name")
     client_id: str = Field(..., alias="ClientId")
     client_secret: Optional[str] = Field(None, alias="ClientSecret")
+    client_bot_token: Optional[str] = Field(None, alias="ClientSecret")
     redirect_url: Optional[str] = Field(None, alias="RedirectUrl")
     grant_types: Optional[list[str]] = Field(None, alias="GrantType")
     scopes: Optional[list[str]] = Field(None, alias="Scopes")

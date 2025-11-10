@@ -24,10 +24,11 @@ class Session(Base):
     __tablename__ = "sessions"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    user_id: Mapped[int] = mapped_column(
+    user_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False
+        nullable=True
     )
+
     client_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("oauth_clients.id"), nullable=True)
     access_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ip_address: Mapped[Optional[str]] = mapped_column(String, nullable=True)
@@ -106,6 +107,7 @@ class OAuthClient(Base):
     name: Mapped[str] = mapped_column(String(255))
     client_id: Mapped[str] = mapped_column(String(100), unique=True)
     client_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    client_bot_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
     redirect_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     grant_types: Mapped[list[str]] = mapped_column(ARRAY(String), server_default=text("ARRAY['authorization_code']"))
     scopes: Mapped[list[str]] = mapped_column(ARRAY(String), server_default=text("ARRAY[]::TEXT[]"))

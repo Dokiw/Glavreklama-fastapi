@@ -8,12 +8,12 @@ from app.handlers.auth.schemas import (
 )
 from app.handlers.coupon.schemas import CreateCoupon, OutCoupon, CreateCouponService
 from app.handlers.session.schemas import CheckSessionAccessToken
-from task_celery.pay_task.schemas import SubtractionBase, SubtractionRead, SubtractionUpdate
+from task_celery.pay_task.schemas import SubtractionBase, SubtractionRead, SubtractionUpdate, SubtractionCreate
 
 
 class AsyncSubtractionService(Protocol):
 
-    async def create_subtraction_user(self, create_data: SubtractionBase, check_data: CheckSessionAccessToken) -> SubtractionRead:
+    async def create_subtraction_user(self, create_data: SubtractionCreate, check_data: CheckSessionAccessToken) -> SubtractionRead:
         ...
 
     async def get_subtraction_by_id(self, id: int, check_data: CheckSessionAccessToken) -> Optional[SubtractionRead]:

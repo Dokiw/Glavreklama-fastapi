@@ -1,16 +1,13 @@
-from typing import Dict, Any, List, Optional
+from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Header, Request, Body, Form
+from fastapi import APIRouter, HTTPException, Depends, Request, Body, Form
 
-from app.core.config import settings
-from app.handlers.auth.schemas import LogInUser, UserCreate, LogOutUser, AuthResponse, RoleUser, InitDataRequest, \
-    AuthResponseProvide, OutUser, PaginateUser, LogInUserBot
-from app.handlers.auth.dependencies import AuthServiceDep, get_auth_service_dep, get_auth_service
-from app.handlers.auth.service import SqlAlchemyAuth
+from app.handlers.auth.dependencies import AuthServiceDep
+from app.handlers.auth.schemas import LogInUser, UserCreate, AuthResponse, RoleUser, AuthResponseProvide, PaginateUser, \
+    LogInUserBot
 from app.handlers.providers.schemas import ProviderLoginRequest
 from app.handlers.session.schemas import CheckSessionAccessToken
 from app.method.get_token import get_token
-from app.method.initdatatelegram import check_telegram_init_data
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -158,3 +155,4 @@ async def update_role(
     )
 
     return await auth_service.update_role(role_id=role_id, check_data=csat)
+

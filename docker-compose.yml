@@ -1,0 +1,57 @@
+services:
+  redis:
+    image: redis:7
+    container_name: project_redis
+    restart: unless-stopped
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "6380:6379"
+    
+  fastapi_app:
+    image: 1kkop1/my-fastapi-app:latest
+    container_name: fastapi_app
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    volumes:
+      - /var/run/postgresql:/var/run/postgresql
+    depends_on:
+      - redis
+    network_mode: "host"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  
+  worker:
+    image: 1kkop1/my-fastapi-app:latest
+    container_name: project_worker
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: celery -A task_celery.celery_config:celery worker -Q celery,billing -n worker1@%h --loglevel=INFO
+    network_mode: "host"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    
+  beat:
+    image: 1kkop1/my-fastapi-app:latest
+    container_name: project_beat
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: celery -A task_celery.celery_config beat --loglevel=info
+    network_mode: "host"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

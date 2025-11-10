@@ -4,7 +4,7 @@ from contextlib import AbstractAsyncContextManager
 
 from app.handlers.auth.interfaces import AsyncUserRepository, AsyncRoleRepository
 from app.handlers.coupon.interfaces import AsyncCouponRepository
-from app.handlers.pay.interfaces import AsyncSubtractionRepository, AsyncPaymentRepository
+from app.handlers.pay.interfaces import AsyncSubtractionRepository, AsyncPaymentRepository, AsyncWalletRepository
 from app.handlers.providers.interfaces import AsyncProviderRepository
 from app.handlers.session.interfaces import AsyncSessionRepository, AsyncRefreshTokenRepository, \
     AsyncOauthClientRepository
@@ -112,7 +112,7 @@ class IUnitOfWorkPayment(AbstractAsyncContextManager, ABC):
 class IUnitOfWorkWallet(AbstractAsyncContextManager, ABC):
     @property
     @abstractmethod
-    def wallet_repo(self) -> "AsyncSubtractionRepository":
+    def wallet_repo(self) -> "AsyncWalletRepository":
         pass
 
     @abstractmethod

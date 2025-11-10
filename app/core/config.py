@@ -3,6 +3,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+from yookassa import Webhook
 
 # 🔧 Настройка логгера
 logger = logging.getLogger("settings")
@@ -28,10 +29,15 @@ class Settings(BaseSettings):
     DB_ENGINE: str
     DB_TYPE: str
 
+    WEBHOOK_URL: str
+
     proxy_url: str
 
     proxy_username: str
     proxy_password: str
+
+    CELERY_BROKER_URL: str
+    CELERY_RESULT_BACKEND: str
 
     CHATGPT_API: str
 

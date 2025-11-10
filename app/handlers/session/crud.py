@@ -290,6 +290,7 @@ class OauthClientRepository(AsyncOauthClientRepository):
             created_at=m.created_at,
             updated_at=m.updated_at,
             revoked=m.revoked,
+            client_bot_token=m.client_bot_token
         )
 
     async def create_oauth_client(self, oauth_client_data: CreateOauthClient) -> Optional[OutOauthClient]:

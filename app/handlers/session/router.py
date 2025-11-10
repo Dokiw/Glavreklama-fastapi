@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from app.handlers.auth.schemas import LogInUser, UserCreate, LogOutUser, AuthResponse,RoleUser
-from app.handlers.session.dependencies import SessionServiceDep
+from app.handlers.session.dependencies import SessionServiceDep, OauthClientServiceDep
 from app.handlers.session.schemas import OpenSession, CloseSession, OutSession, CheckSessionAccessToken, \
-    CheckSessionRefreshToken
+    CheckSessionRefreshToken, OutOauthClient, CheckOauthClient
 
 router = APIRouter(prefix="/session", tags=["session"])
 
@@ -18,6 +18,13 @@ async def hub():
 # @router.post("/close",response_model=CloseSession)
 # async def close_session(session_close: CloseSession, session_service: SessionServiceDep):
 #     return await session_service.close_session(session_close)
+
+
+# todo - заготовка под новый сервер и получение информации.
+# @router.post("/refresh_token",response_model=OutOauthClient)
+# async def valid_server(session_service: SessionServiceDep, oauth_client: str, oauth_client_secret: str):
+#     return None
+
 
 @router.post("/refresh_token",response_model=OutSession)
 async def validate_session(session_service: SessionServiceDep, user_id: int,

@@ -1,21 +1,17 @@
+import importlib
 import importlib.util
+import json
+import logging
+import os
 import pkgutil
 import sys
-import traceback
-from pathlib import Path
-from fastapi import FastAPI
-
-from fastapi.middleware.cors import CORSMiddleware
-import importlib
-import pkgutil
-from contextlib import asynccontextmanager
-import logging
-
-import os
 import time
-import json
 import traceback
+from contextlib import asynccontextmanager
+from pathlib import Path
+
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 
 logger = logging.getLogger("uvicorn")
 logger.setLevel(logging.DEBUG)
@@ -160,6 +156,7 @@ async def simple_logger_middleware(request: Request, call_next):
 
 def import_all_routes(app: FastAPI, package_name: str):
     logger = __import__("logging").getLogger("uvicorn")
+
     try:
         pkg = importlib.import_module(package_name)
     except ModuleNotFoundError as e:

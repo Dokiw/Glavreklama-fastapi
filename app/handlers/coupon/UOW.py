@@ -12,7 +12,7 @@ class SqlAlchemyUnitOfWork(IUnitOfWorkCoupon):
         self._coupon_repo: Optional[AsyncCouponRepository] = None
 
     async def __aenter__(self) -> "SqlAlchemyUnitOfWork":
-        self._session = self.session_factory()
+        self._session = await self.session_factory()
         self._coupon_repo = CouponRepository(self._session)
         return self
 

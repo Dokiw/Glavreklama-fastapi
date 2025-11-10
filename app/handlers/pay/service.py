@@ -7,7 +7,7 @@ from datetime import time
 import datetime as dt
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import aiohttp
-from yookassa import Payment
+from yookassa import Payment, Webhook
 from typing import Optional, List, Dict, Any
 import yookassa
 from fastapi import HTTPException, status
@@ -47,7 +47,7 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
 
         result = await self.uow.payment_repo.get_payments_by_user_id_last(create_data.user_id)
         if result is not None:
-            if result.status == "pending" or result.status == "waiting_for_capture" and result.amount == create_data.amount:
+            if (result.status == "pending" or result.status == "waiting_for_capture") and (result.amount == create_data.amount):
                 return result
 
         idempotence_key = str(uuid.uuid4())
@@ -147,7 +147,7 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
 
     @transactional()
     async def webhook_api(self, payload: Dict[str, Any], headers: Dict[str, str], remote_addr: Optional[str] = None) -> \
-    Optional[PaymentsOut]:
+            Optional[PaymentsOut]:
         logger = logging.getLogger("payments.webhook")
         try:
             if remote_addr:
@@ -168,11 +168,11 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
 
             # --- idempotence: from headers or payload.metadata ---
             idemp = (
-                headers.get("Idempotence-Key")
-                or headers.get("Idempotence-key")
-                or headers.get("idempotence-key")
-                or payment_obj.get("metadata", {}).get("idempotence_key")
-                or payload.get("metadata", {}).get("idempotence_key")
+                    headers.get("Idempotence-Key")
+                    or headers.get("Idempotence-key")
+                    or headers.get("idempotence-key")
+                    or payment_obj.get("metadata", {}).get("idempotence_key")
+                    or payload.get("metadata", {}).get("idempotence_key")
             )
             logger.debug("Webhook: extracted idempotence: %s", idemp)
 
@@ -340,6 +340,11 @@ class SqlAlchemyServiceWallet(AsyncWalletService):
         self.session_service = session_service
 
     @transactional()
+    async def get_wallet_by_user_id_internal(self, id: int) -> Optional[OutWallets]:
+        wallet = await self.uow.wallet_repo.get_wallet_by_user_id(id)
+        return wallet
+
+    @transactional()
     async def create_wallet_or_get_wallet(self, check_data: CheckSessionAccessToken) -> OutWallets:
         session = await self.session_service.validate_access_token_session(check_data)
         if session is None:
@@ -421,29 +426,63 @@ class ApiError(Exception):
 
 
 class SqlAlchemyServicePaymentApi:
-    """
-    Обёртка над официальным SDK yookassa.
-    - Поддерживает использование глобального settings (если http_client/secret/shop не переданы),
-      но также позволяет явную передачу параметров в __init__.
-    - SDK синхронный, поэтому вызывает сетевые операции через asyncio.to_thread.
-    """
+    # _webhook_initialized = False  # защита на уровне процесса
 
     def __init__(
-            self,
-            timeout: int = 10,  # пока не используется SDK напрямую, но оставлено для совместимости
-            max_retries: int = 3,
-            # логика повторов оставлена на уровне вызова (см. ниже), но SDK обычно сам справляется
-            secret_key: str = settings.SECRET_KEY,
-            shop_id: str = settings.SHOP_ID,
+        self,
+        timeout: int = 10,
+        max_retries: int = 3,
+        secret_key: str = None,
+        shop_id: str = None,
+        webhook_url: str = None,
     ):
-        self.secret_key = secret_key
-        self.shop_id = shop_id
+        # берём из аргументов или из settings
+        self.secret_key = (secret_key or settings.SECRET_KEY)
+        self.shop_id = (shop_id or settings.SHOP_ID)
+        self.webhook_url = (webhook_url or getattr(settings, "WEBHOOK_URL", None))
         self.timeout = timeout
         self.max_retries = max_retries
 
-        # Инициализация глобальной конфигурации SDK
-        Configuration.account_id = self.shop_id.strip()
-        Configuration.secret_key = self.secret_key.strip()
+        # валидируем
+        if not self.shop_id or not self.secret_key:
+            raise ValueError("YooKassa: SHOP_ID и SECRET_KEY обязательны для инициализации")
+
+        # безопасно устанавливаем конфигурацию SDK
+        Configuration.account_id = str(self.shop_id).strip()
+        Configuration.secret_key = str(self.secret_key).strip()
+
+        # # инициализируем вебхуки 1 раз на процесс (или вызывать из startup handler)
+        # if not SqlAlchemyServicePaymentApi._webhook_initialized:
+        #     try:
+        #         self._init_webhooks()
+        #     finally:
+        #         SqlAlchemyServicePaymentApi._webhook_initialized = True
+
+    def _init_webhooks(self):
+        if not self.webhook_url:
+            logger.warning("WEBHOOK_URL не задан — пропускаю регистрацию вебхуков")
+            return
+
+        try:
+            webhooks = Webhook.list()
+            # проверяем, есть ли уже webhook с таким URL и event'ом
+            exists = any(
+                getattr(wh, "url", "") == self.webhook_url and getattr(wh, "event", "") in ("payment.succeeded", "payment.canceled")
+                for wh in getattr(webhooks, "items", [])
+            )
+
+            if exists:
+                logger.info("YooKassa webhook уже зарегистрирован: %s", self.webhook_url)
+                return
+
+            # создаём только необходимые
+            Webhook.add()
+            Webhook.add({"event": "payment.succeeded", "url": self.webhook_url})
+            Webhook.add({"event": "payment.canceled", "url": self.webhook_url})
+            logger.info("YooKassa webhooks добавлены: %s", self.webhook_url)
+
+        except Exception:
+            logger.exception(f"Ошибка при регистрации вебхуков YooKassa {self.shop_id} - {self.secret_key}")
 
     async def find_by_local_payment_id(self, local_payment_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -621,7 +660,7 @@ class SqlAlchemyServicePaymentApi:
             "amount": {
                 "value": amount_val if isinstance(amount_val, str) else amount_val["value"],
                 "currency": "RUB" if not (
-                            isinstance(amount_val, dict) and amount_val.get("currency")) else amount_val.get("currency")
+                        isinstance(amount_val, dict) and amount_val.get("currency")) else amount_val.get("currency")
             },
             "confirmation": {
                 "type": "redirect",
@@ -656,8 +695,3 @@ class SqlAlchemyServicePaymentApi:
             print("create_payment error:", e)
             # Можно вернуть структуру с описанием ошибки, чтобы вызывающая сторона не падала
             return {"error": str(e)}
-
-
-
-
-

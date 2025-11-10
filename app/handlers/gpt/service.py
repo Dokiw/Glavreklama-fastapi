@@ -34,7 +34,7 @@ class SqlAlchemyGPT(AsyncGPTService):
     ) -> Dict[str, Any]:
 
         # 1) Проверки доступа
-        await self.role_service.is_admin(check_data.user_id)
+        #await self.role_service.is_admin(check_data.user_id)
         await self.session_service.validate_access_token_session(check_data)
         # 2) Данные для запроса OpenAI
         url = "https://api.openai.com/v1/responses"
@@ -125,7 +125,7 @@ class SqlAlchemyGPT(AsyncGPTService):
             -> OutGPTkey:
         try:
             # 1) Проверки доступа
-            await self.role_service.is_admin(check_data.user_id)
+            #await self.role_service.is_admin(check_data.user_id)
             await self.session_service.validate_access_token_session(check_data)
 
             oauth_client_data = await self.oauth_client_service.get_by_client_id_oauth(oauth_client)

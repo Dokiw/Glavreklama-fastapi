@@ -264,7 +264,13 @@ class SqlAlchemyAuth(AsyncAuthService):
     ) -> Optional[AuthResponseProvide]:
         try:
             async with self.uow:  # единая транзакция для всех операций
-                init_data = await check_telegram_init_data(init_data, settings.BOT_TOKEN)
+                oauth_client_data = await self.oauth_client_service.get_by_client_id_oauth(oauth_client)
+                if oauth_client_data is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Данный клиент не существует"
+                    )
+                init_data = await check_telegram_init_data(init_data, oauth_client_data.client_bot_token)
 
                 # 2) parse user JSON
                 try:
@@ -272,7 +278,7 @@ class SqlAlchemyAuth(AsyncAuthService):
                 except (json.JSONDecodeError, TypeError, KeyError):
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Некорректный формат данных пользователя {init_data} and {settings.BOT_TOKEN}"
+                        detail=f"Некорректный формат данных пользователя"
                     )
 
                 provider = "telegram"

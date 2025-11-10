@@ -28,6 +28,10 @@ class SqlAlchemyServiceSession(AsyncSessionService):
         self.refresh_service = refresh_service
         self.oauth_client = oauth_client
 
+
+
+
+
     async def get_oauth_by_client(self, client_id: str) -> Optional[OutSession]:
         try:
             async with self.uow:
@@ -520,7 +524,7 @@ class SqlAlchemyServiceOauthClient(AsyncOauthClientService):
                     if client_data.client_secret != check_data.client_secret:
                         raise HTTPException(
                             status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail=f"Неверно переданы данные {check_data.client_secret} -- {check_data.client_secret}"
+                            detail=f"Неверно переданы данные {client_data.client_secret} -- {check_data.client_secret}"
                         )
 
                 return client_data

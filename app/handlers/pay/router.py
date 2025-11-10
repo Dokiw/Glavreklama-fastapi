@@ -1,7 +1,10 @@
 import logging
+from datetime import datetime
+from decimal import Decimal
 from typing import Dict, Any
 # paymentServiceDep должен быть Annotated/Depends на SqlAlchemyServicePayment
 from typing import Optional, List
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Request, Depends, Body
 
@@ -19,6 +22,8 @@ from app.handlers.pay.schemas import (
 from app.handlers.session.schemas import CheckSessionAccessToken
 from app.main import logger
 from app.method.get_token import get_token
+from task_celery.pay_task.dependencies import subtractionServiceDep
+from task_celery.pay_task.schemas import SubtractionCreate, SubtractionUpdate
 
 router = APIRouter(prefix="/payment", tags=["payment"])
 
@@ -250,3 +255,63 @@ async def get_wallet_by_id(
     )
 
     return await wallet_service.get_wallet_by_id(id=id, check_data=csat)
+
+
+@router.post("/duty_pay_users")
+async def duty_payment(
+        subtraction_service: subtractionServiceDep,
+        user_id: int,
+        request: Request,
+        access_token: str = Depends(get_token),
+):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "")
+
+    csat = CheckSessionAccessToken(
+        user_id=user_id,
+        ip_address=ip,
+        user_agent=user_agent,
+        access_token=access_token,
+    )
+    c_d = SubtractionCreate(
+        user_id=user_id,  # int
+        card=False,  # bool
+        service_code="tg_bot",
+        amount_value=Decimal("144.00"),  # Decimal
+        currency="RUB",
+        billing_period="1 month",
+        # datetime(year, month, day) — можно добавить время и timezone
+        next_run=datetime.now(tz=ZoneInfo("Europe/Moscow")),
+        status="active",
+        idempotency_key=None
+    )
+
+    result = await subtraction_service.create_subtraction_user(create_data=c_d, check_data=csat)
+    # task = run_auto_payment.delay()
+    return result
+
+
+@router.post("/stop_pay_users")
+async def stop_payment(
+        subtraction_service: subtractionServiceDep,
+        user_id: int,
+        request: Request,
+        access_token: str = Depends(get_token),
+):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "")
+
+    csat = CheckSessionAccessToken(
+        user_id=user_id,
+        ip_address=ip,
+        user_agent=user_agent,
+        access_token=access_token,
+    )
+    c_d = SubtractionUpdate(
+        user_id=user_id,  # int
+        status="paused",
+    )
+
+    result = await subtraction_service.update_subtraction_user(update_data=c_d, check_data=csat)
+    # task = run_auto_payment.delay()
+    return result

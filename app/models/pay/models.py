@@ -100,25 +100,32 @@ class Payments(Base):
 class Subtraction(Base):
     __tablename__ = "subtraction"
     __table_args__ = (
-        # составной индекс для быстрого поиска "открытых" транзакций по user + status
-        Index("idx_payments_user_status", "user_id"),
+        # индекс для быстрого поиска по user + статус + next_run
+        Index("idx_subtraction_user_status_next", "user_id", "status", "next_run"),
     )
-
     id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    # если true -> использовать external card flow (YooKassa): создаём запись в Payments и запускаем flow через Payments
+    # если false -> списание из internal wallet (в таблице Wallet)
+    card: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Что именно списывать: service code (например "tg_bot_premium") — удобно для логов/фич
+    service_code: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
 
-    card: Mapped[bool] = mapped_column(Boolean, nullable=False)
-
+    # snapshot суммы для списания (можно менять per-subscription)
+    amount_value: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=Decimal("0.00"))
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="RUB")
+    # период биллинга (храним в удобном формате, например "1 month", "30 days", "1 year")
+    billing_period: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    next_run: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active", index=True)
+    idempotency_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, unique=False, index=True)
+    # diagnostics
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    last_tried_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
                                                  onupdate=func.now())
-    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    user: Mapped["User"] = relationship("User", back_populates="subtraction", lazy="joined")
 
-
-
-
+    # relationships
+    user = relationship("User", back_populates="subtractions", lazy="joined")

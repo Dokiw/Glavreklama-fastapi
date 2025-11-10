@@ -13,13 +13,15 @@ class SqlAlchemyUnitOfWork(IUnitOfWorkAuth):
 
     async def __aenter__(self) -> "SqlAlchemyUnitOfWork":
         # Если session_factory асинхронная функция, нужно await
-        self._session = self.session_factory()
+        self._session = await self.session_factory()
         self.user_repo = UserRepository(self._session)
         self.role_repo = RoleRepository(self._session)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is not None:
+        if exc_type is None:
+            await self.commit()  # автоматически сохраняем изменения
+        else:
             await self.rollback()
         await self._session.close()
 

@@ -16,6 +16,7 @@ from datetime import datetime
 from passlib.hash import bcrypt
 
 from app.db.base import Base
+
 from app.models.pay import Wallet, Payments
 from app.models.coupon import CouponUser
 from app.models.providers.models import UserProviders
@@ -62,6 +63,12 @@ class User(Base):
 
     # список платежей пользователя
     payments: Mapped[List[Payments]] = relationship("Payments", back_populates="user", cascade="all, delete-orphan")
+
+    subtractions: Mapped[List["Subtraction"]] = relationship(
+        "Subtraction",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     @property
     def password(self) -> None:

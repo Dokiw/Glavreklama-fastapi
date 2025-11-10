@@ -50,10 +50,10 @@ def transactional(uow_attr: str = "uow"):
                 )
 
                 # любые другие ошибки — откатываем транзакцию и возвращаем 500
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Внутренняя ошибка сервера: {str(e)}"
-                )
+                #raise HTTPException(
+                #    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                #    detail=f"Внутренняя ошибка сервера: {str(e)}"
+                #)
 
         return wrapper
 
