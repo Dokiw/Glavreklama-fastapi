@@ -126,6 +126,7 @@ async def get_roles(
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
+
     csat = CheckSessionAccessToken(
         user_id=user_id,
         ip_address=ip,

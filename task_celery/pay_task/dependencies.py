@@ -57,6 +57,7 @@ async def build_subtraction_service() -> SqlAlchemySubtractionService:
                 refresh_service=SqlAlchemyServiceRefreshToken(session_uow),
                 oauth_client=SqlAlchemyServiceOauthClient(session_uow)
             )
+
             wallet_service = SqlAlchemyServiceWallet(
                 uow=wallet_uow,
                 session_service=session_service
