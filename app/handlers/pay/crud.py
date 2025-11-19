@@ -93,7 +93,7 @@ class PaymentRepository(AsyncPaymentRepository):
             yookassa_payment_id=m.yookassa_payment_id,
             currency=m.currency,
             idempotency_key=m.idempotency_key if m.idempotency_key else None,
-
+            meta_data=m.metadata if m.idempotency_key else None,
             created_at=m.created_at,
             updated_at=m.updated_at if m.updated_at else None,
             closed_at=m.closed_at if m.closed_at else None,

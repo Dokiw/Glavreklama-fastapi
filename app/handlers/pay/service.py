@@ -62,7 +62,7 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
             description=create_data.description,
             currency=create_data.currency,
             capture=create_data.capture,
-            metadata_payments=create_data.metadata_payments,
+            metadata_payments={"type_payment": "single"},
             idempotency_key=idempotence_key,
         )
         )
@@ -210,6 +210,9 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
         result = await self.uow.payment_repo.get_payments_by_idempotency_id(idempotency_id)
         return result
 
+
+
+    #todo - ПЕРЕДЕЛАТЬ НАХРЕН ДАННЫЙ МЕТОД
     @transactional()
     async def webhook_api(self, payload: Dict[str, Any], headers: Dict[str, str], remote_addr: Optional[str] = None) -> \
             Optional[PaymentsOut]:
@@ -353,12 +356,15 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
                         ))
                         return None
 
-                    # credit wallet
-                    await self.wallet_service.update_wallets_user_internal(UpdateWalletsService(
-                        id=wallet_id,
-                        amount=dec_amount,
-                        reason="plus"
-                    ))
+                    if local_payment.meta_data["type_payment"] == "single":
+                        pass
+                    else:
+                        # credit wallet
+                        await self.wallet_service.update_wallets_user_internal(UpdateWalletsService(
+                            id=wallet_id,
+                            amount=dec_amount,
+                            reason="plus"
+                        ))
 
                     # update local payment (use str(id) to avoid UUID->str issues)
                     updated = await self.uow.payment_repo.update_payments(UpdatePayments(

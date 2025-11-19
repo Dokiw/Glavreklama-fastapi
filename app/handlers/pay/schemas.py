@@ -129,6 +129,7 @@ class PaymentsOut(BaseModel):
     yookassa_payment_id: str = Field(..., alias="YookassaPaymentId")
     currency: str = Field(..., alias="Currency")
     idempotency_key: Optional[str] = Field(None, alias="IdempotencyKey")
+    meta_data: Optional[dict] = Field(None, alias="metaData")
 
     created_at: datetime = Field(..., alias="CreateAt")
     updated_at: Optional[datetime] = Field(None, alias="UpdatedAt")
