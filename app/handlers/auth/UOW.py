@@ -13,7 +13,7 @@ class SqlAlchemyUnitOfWork(IUnitOfWorkAuth):
 
     async def __aenter__(self) -> "SqlAlchemyUnitOfWork":
         # Если session_factory асинхронная функция, нужно await
-        self._session = await self.session_factory()
+        self._session = self.session_factory()
         self.user_repo = UserRepository(self._session)
         self.role_repo = RoleRepository(self._session)
         return self

@@ -12,7 +12,7 @@ class SqlAlchemyUnitOfWork(IUnitOfWorkProvider):
         self._session: Optional[AsyncSession] = None
 
     async def __aenter__(self):
-        self._session = await self.session_factory()
+        self._session = self.session_factory()
         self.provider_repo = ProvideRepository(self._session)
         return self
 

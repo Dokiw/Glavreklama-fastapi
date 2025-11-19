@@ -36,6 +36,70 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
         self.payment_service_api = payment_service_api
 
     @transactional()
+    async def create_payments_single(self, create_data: CreatePaymentsService,
+                                     check_data: CheckSessionAccessToken) -> (
+            CreatePaymentsOut | PaymentsOut):
+        session = await self.session_service.validate_access_token_session(check_data)
+        if session is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ошибка целостности данных"
+            )
+
+        result = await self.uow.payment_repo.get_payments_by_user_id_last(create_data.user_id)
+        if result is not None:
+            if (result.status == "pending" or result.status == "waiting_for_capture") and (
+                    result.amount == create_data.amount):
+                return result
+
+        idempotence_key = str(uuid.uuid4())
+        result = await self.uow.payment_repo.create_payments(CreatePayments(
+            user_id=create_data.user_id,
+            wallet_id=create_data.wallet_id,
+            amount=create_data.amount,
+            return_url=create_data.return_url,
+            confirmation_type=create_data.confirmation_type,
+            description=create_data.description,
+            currency=create_data.currency,
+            capture=create_data.capture,
+            metadata_payments=create_data.metadata_payments,
+            idempotency_key=idempotence_key,
+        )
+        )
+
+        api_payment = await self.payment_service_api.create_payment(
+            amount=create_data.amount,
+            return_url=create_data.return_url,
+            description=create_data.description,
+            user_id=str(create_data.user_id),
+            payment_id=result.id,
+            idemp=idempotence_key,
+        )
+
+        confirmation = api_payment.get("confirmation") or {}
+        confirmation_url = confirmation.get("confirmation_url")
+        confirmation_type = confirmation.get("type")
+
+        update_data = await self.uow.payment_repo.update_payments(UpdatePayments(
+            id=result.id,
+            status=api_payment.get("status"),
+            payment_id=api_payment.get("id"),
+            confirmation_url=confirmation_url,
+            confirmation_type=confirmation_type,
+        ))
+
+        response_obj = CreatePaymentsOut(
+            id=str(result.id),
+            user_id=result.user_id,
+            confirmation_url=update_data.confirmation_url,
+            confirmation_type=update_data.confirmation_type,
+            status=update_data.status,
+            wallet_id=result.wallet_id,
+            currency=result.currency,
+        )
+        return response_obj
+
+    @transactional()
     async def create_payments(self, create_data: CreatePaymentsService, check_data: CheckSessionAccessToken) -> (
             CreatePaymentsOut | PaymentsOut):
         session = await self.session_service.validate_access_token_session(check_data)
@@ -47,7 +111,8 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
 
         result = await self.uow.payment_repo.get_payments_by_user_id_last(create_data.user_id)
         if result is not None:
-            if (result.status == "pending" or result.status == "waiting_for_capture") and (result.amount == create_data.amount):
+            if (result.status == "pending" or result.status == "waiting_for_capture") and (
+                    result.amount == create_data.amount):
                 return result
 
         idempotence_key = str(uuid.uuid4())
@@ -429,12 +494,12 @@ class SqlAlchemyServicePaymentApi:
     # _webhook_initialized = False  # защита на уровне процесса
 
     def __init__(
-        self,
-        timeout: int = 10,
-        max_retries: int = 3,
-        secret_key: str = None,
-        shop_id: str = None,
-        webhook_url: str = None,
+            self,
+            timeout: int = 10,
+            max_retries: int = 3,
+            secret_key: str = None,
+            shop_id: str = None,
+            webhook_url: str = None,
     ):
         # берём из аргументов или из settings
         self.secret_key = (secret_key or settings.SECRET_KEY)
@@ -467,7 +532,8 @@ class SqlAlchemyServicePaymentApi:
             webhooks = Webhook.list()
             # проверяем, есть ли уже webhook с таким URL и event'ом
             exists = any(
-                getattr(wh, "url", "") == self.webhook_url and getattr(wh, "event", "") in ("payment.succeeded", "payment.canceled")
+                getattr(wh, "url", "") == self.webhook_url and getattr(wh, "event", "") in (
+                    "payment.succeeded", "payment.canceled")
                 for wh in getattr(webhooks, "items", [])
             )
 

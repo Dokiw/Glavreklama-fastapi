@@ -95,6 +95,11 @@ class AsyncWalletService(Protocol):
 
 class AsyncPaymentService(Protocol):
 
+    async def create_payments_single(self, create_data: CreatePaymentsService,
+                                     check_data: CheckSessionAccessToken) -> (
+            CreatePaymentsOut | PaymentsOut):
+        ...
+
     async def create_payments(self, create_data: CreatePaymentsService,
                               check_data: CheckSessionAccessToken) -> (
             CreatePaymentsOut | PaymentsOut):

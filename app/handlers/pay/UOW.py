@@ -12,7 +12,7 @@ class SqlAlchemyUnitOfWorkWallet(IUnitOfWorkWallet):
         self._session: Optional[AsyncSession] = None
 
     async def __aenter__(self):
-        self._session = await self.session_factory()
+        self._session = self.session_factory()
         self._wallet_repo = WalletRepository(self._session)
         return self
 
