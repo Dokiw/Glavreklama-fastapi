@@ -8,6 +8,8 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Request, Depends, Body
 
+from app.handlers.auth.dependencies import AuthServiceDep
+from app.handlers.auth.schemas import LogInUserBot
 from app.handlers.pay.dependencies import paymentServiceDep  # <- проверь путь, если у тебя иначе
 from app.handlers.pay.dependencies import walletServiceDep  # <- проверь путь
 from app.handlers.pay.schemas import (
@@ -71,6 +73,46 @@ async def create_payment(
     )
 
     return await payment_service.create_payments(create_data=create_data, check_data=csat)
+
+
+@router.post("/create_payment_single", response_model=Optional[CreatePaymentsOut])
+async def create_payment_single(
+        payment_service: paymentServiceDep,
+        user_id: int,
+        wallet_id: int,
+        amount: float,
+        return_url: str,
+        confirmation_type: Optional[str] = None,
+        description: Optional[str] = None,
+        currency: Optional[str] = "RUB",
+        capture: Optional[bool] = True,
+        metadata_payments: Optional[Dict[str, Any]] = None,
+        request: Request = None,
+        access_token: str = Depends(get_token),
+):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "")
+
+    csat = CheckSessionAccessToken(
+        user_id=user_id,
+        ip_address=ip,
+        user_agent=user_agent,
+        access_token=access_token,
+    )
+
+    create_data = CreatePaymentsService(
+        user_id=user_id,
+        wallet_id=wallet_id,
+        amount=amount,
+        return_url=return_url,
+        confirmation_type=confirmation_type,
+        description=description,
+        currency=currency,
+        capture=capture,
+        metadata_payments=metadata_payments,
+    )
+
+    return await payment_service.create_payments_single(create_data=create_data, check_data=csat)
 
 
 @router.post("/update_payment", response_model=Optional[PaymentsOut])
@@ -234,6 +276,25 @@ async def update_wallet(
     )
 
     return await wallet_service.update_wallets_user(update_data=update_data, check_data=csat)
+
+
+@router.post("/update_wallet_oauth", response_model=Optional[OutWallets])
+async def update_wallet(
+        wallet_service: walletServiceDep,
+        auth_service: AuthServiceDep,
+        log_in_user: LogInUserBot,
+        update_data: UpdateWalletsService = Body(...),
+        request: Request = None,
+):
+    """
+    Обновление баланса кошелька через oauth_client
+    """
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "")
+
+    await auth_service.login_via_bots(log_in_user, ip, user_agent=user_agent)
+
+    return await wallet_service.update_wallets_user_internal(update_data)
 
 
 @router.post("/get_wallet_by_id", response_model=Optional[OutWallets])

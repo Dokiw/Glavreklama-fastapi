@@ -18,6 +18,7 @@ from yookassa import Configuration
 
 from app.core.abs.unit_of_work import IUnitOfWorkWallet, IUnitOfWorkPayment
 from app.core.config import settings, logger
+from app.handlers.pay.crud import PaymentRepository
 from app.handlers.pay.interfaces import AsyncPaymentService, AsyncWalletService, AsyncApiPaymentService
 from app.handlers.pay.schemas import CreatePaymentsService, UpdatePayments, CreatePaymentsOut, PaymentsOut, \
     CreateWallets, \
@@ -210,9 +211,7 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
         result = await self.uow.payment_repo.get_payments_by_idempotency_id(idempotency_id)
         return result
 
-
-
-    #todo - ПЕРЕДЕЛАТЬ НАХРЕН ДАННЫЙ МЕТОД
+    # todo - ПЕРЕДЕЛАТЬ НАХРЕН ДАННЫЙ МЕТОД
     @transactional()
     async def webhook_api(self, payload: Dict[str, Any], headers: Dict[str, str], remote_addr: Optional[str] = None) -> \
             Optional[PaymentsOut]:
@@ -356,7 +355,10 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
                         ))
                         return None
 
-                    if local_payment.meta_data["type_payment"] == "single":
+                    meta = local_payment.metadata_payments or {}
+
+                    if meta.get("type_payment") == "single":
+                        # Логика для single
                         pass
                     else:
                         # credit wallet
@@ -409,6 +411,7 @@ class SqlAlchemyServiceWallet(AsyncWalletService):
     def __init__(self, uow: IUnitOfWorkWallet, session_service: AsyncSessionService):
         self.uow = uow
         self.session_service = session_service
+
 
     @transactional()
     async def get_wallet_by_user_id_internal(self, id: int) -> Optional[OutWallets]:
@@ -503,14 +506,11 @@ class SqlAlchemyServicePaymentApi:
             self,
             timeout: int = 10,
             max_retries: int = 3,
-            secret_key: str = None,
-            shop_id: str = None,
-            webhook_url: str = None,
     ):
         # берём из аргументов или из settings
-        self.secret_key = (secret_key or settings.SECRET_KEY)
-        self.shop_id = (shop_id or settings.SHOP_ID)
-        self.webhook_url = (webhook_url or getattr(settings, "WEBHOOK_URL", None))
+        self.secret_key = settings.SECRET_KEY
+        self.shop_id = settings.SHOP_ID
+        self.webhook_url = (getattr(settings, "WEBHOOK_URL", None))
         self.timeout = timeout
         self.max_retries = max_retries
 

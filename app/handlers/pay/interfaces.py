@@ -83,6 +83,10 @@ class AsyncWalletService(Protocol):
                                   check_data: CheckSessionAccessToken) -> OutWallets:
         ...
 
+    async def update_wallets_user_by_oauth(self, update_data: UpdateWalletsService,
+                                           check_data: CheckSessionAccessToken) -> OutWallets:
+        ...
+
     async def get_wallet_by_id(self, id: int, check_data: CheckSessionAccessToken) -> Optional[OutWallets]:
         ...
 

@@ -28,10 +28,6 @@ class SqlAlchemyServiceSession(AsyncSessionService):
         self.refresh_service = refresh_service
         self.oauth_client = oauth_client
 
-
-
-
-
     async def get_oauth_by_client(self, client_id: str) -> Optional[OutSession]:
         try:
             async with self.uow:
