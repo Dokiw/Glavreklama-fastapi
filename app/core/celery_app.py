@@ -6,5 +6,4 @@ celery_app = Celery(
     backend="redis://localhost:6379/1",
 )
 
-celery_app.autodiscover_tasks(["task_celery"]
-                              )
+celery_app.autodiscover_tasks(["task_celery"])

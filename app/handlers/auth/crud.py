@@ -1,7 +1,5 @@
-
-
 from app.handlers.auth.dto import UserAuthData
-from app.handlers.auth.schemas import OutUser, UserCreate, RoleUser, UserCreateProvide
+from app.handlers.auth.schemas import OutUser, UserCreate, RoleUser, UserCreateProvide, UserUpdate
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.handlers.auth.interfaces import AsyncUserRepository, AsyncRoleRepository
 from sqlalchemy import select, func, update
@@ -29,8 +27,27 @@ class UserRepository(AsyncUserRepository):
             email=m.email,
             first_name=m.first_name,
             last_name=m.last_name,
-            role_id = m.role_id,
+            role_id=m.role_id,
         )
+
+    async def update_user(self, user_data: UserUpdate) -> Optional[OutUser]:
+
+        stmt = (
+            update(UserModel)
+            .where(UserModel.id == user_data.user_id)
+            .values(
+                user_name=user_data.user_name,
+                first_name=user_data.first_name,
+                last_name=user_data.last_name,
+                meta_data=user_data.meta_data,
+            )
+            .returning(UserModel)
+        )
+
+        result = await self.db.execute(stmt)
+        result = result.scalar_one_or_none()
+
+        return self._to_dto(result) if result else None
 
     async def create_user(self, user_in: UserCreate) -> OutUser:
         m = UserModel()
@@ -95,7 +112,7 @@ class UserRepository(AsyncUserRepository):
         stmt = (
             update(UserModel)
             .where(UserModel.id == user_id)
-            .values(role_id = role_id)
+            .values(role_id=role_id)
             .returning(UserModel)
         )
         result = await self.db.execute(stmt)
@@ -129,4 +146,3 @@ class RoleRepository(AsyncRoleRepository):  # Исправлено наслед�
         result = await self.db.execute(q)
         role = result.scalars().all()
         return [RoleUser(role_id=r.id, name=r.name, description=r.description) for r in role]
-

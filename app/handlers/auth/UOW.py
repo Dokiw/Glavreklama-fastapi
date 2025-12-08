@@ -18,7 +18,6 @@ class SqlAlchemyUnitOfWork(IUnitOfWorkAuth):
         self.role_repo = RoleRepository(self._session)
         return self
 
-
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if exc_type is None:
             await self.commit()  # автоматически сохраняем изменения

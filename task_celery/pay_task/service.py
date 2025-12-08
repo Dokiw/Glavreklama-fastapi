@@ -1,31 +1,20 @@
-import hashlib
 import math
+from datetime import datetime
 from decimal import Decimal
-from typing import Optional, List
-import time
-from datetime import datetime, timedelta, UTC
+from typing import Optional
 from zoneinfo import ZoneInfo
-from app.main import logger
-from celery.utils.log import get_task_logger
+
 from dateutil.relativedelta import relativedelta
 
-from app.handlers.auth.interfaces import AsyncRoleService
-from app.handlers.coupon.interfaces import AsyncCouponService
-from app.handlers.coupon.UOW import SqlAlchemyUnitOfWork
-from app.handlers.coupon.schemas import CreateCoupon, OutCoupon, CreateCouponService
-from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError
-from app.core.abs.unit_of_work import IUnitOfWorkWallet, IUnitOfWorkCoupon, IUnitOfWorkSubtraction
+from app.core.abs.unit_of_work import IUnitOfWorkSubtraction
 from app.handlers.pay.interfaces import AsyncWalletService
 from app.handlers.pay.schemas import UpdateWalletsService
-from app.handlers.session.dependencies import SessionServiceDep
 from app.handlers.session.interfaces import AsyncSessionService
 from app.handlers.session.schemas import CheckSessionAccessToken
+from app.main import logger
 from app.method.decorator import transactional
-from app.method.generator_promo import PromoGenerator
 from task_celery.pay_task.interfaces import AsyncSubtractionService
-from task_celery.pay_task.schemas import SubtractionRead, SubtractionUpdate, SubtractionBase, SubtractionCreate
-
+from task_celery.pay_task.schemas import SubtractionRead, SubtractionUpdate, SubtractionCreate
 
 TZ = ZoneInfo("Europe/Moscow")
 

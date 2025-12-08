@@ -12,7 +12,7 @@ from app.handlers.auth.dto import UserAuthData
 from app.handlers.auth.interfaces import AsyncAuthService, AsyncRoleService
 from app.handlers.auth.schemas import PaginateUser, LogInUser, RoleUser, AuthResponse, OutUser, Token, UserCreate, \
     UserCreateProvide, \
-    AuthResponseProvide, LogInUserBot
+    AuthResponseProvide, LogInUserBot, UserUpdate
 from app.handlers.providers.schemas import ProviderRegisterRequest, ProviderLoginRequest, ProviderOut
 from app.handlers.session.interfaces import AsyncSessionService, AsyncOauthClientService
 from app.handlers.session.schemas import OpenSession, CheckSessionAccessToken, OutSession, CheckOauthClient
@@ -42,18 +42,21 @@ class SqlAlchemyAuth(AsyncAuthService):
     @transactional()
     async def login_via_bots(self, login_data: LogInUserBot, ip: str,
                              user_agent: str) -> AuthResponse:
-        auth: Optional[UserAuthData] = await self.uow.user_repo.get_auth_data(login_data.username)
 
         provider_login = ProviderLoginRequest(
             provider="telegram",
             provider_user_id=str(login_data.provider_user_id),
         )
-
         auth_provide: Optional[ProviderOut] = await self.provide_user.login_provider_user(provider_login)
+
+        auth: Optional[UserAuthData] = await self.uow.user_repo.get_by_id(auth_provide.user_id)
 
         await self.oauth_client_service.check_oauth_client(
             check_data=CheckOauthClient(client_id=str(login_data.client_id),
                                         client_secret=str(login_data.client_secret)))
+
+        if auth.user_name != login_data.username:
+            await self.uow.user_repo.update_user(UserUpdate(user_id=auth.id,user_name=login_data.username))
 
         if str(auth_provide.provider_user_id) != str(login_data.provider_user_id):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
@@ -121,6 +124,8 @@ class SqlAlchemyAuth(AsyncAuthService):
                     access_token=session.access_token,
                     refresh_token=session.refresh_token
                 )
+
+                return AuthResponse(user_data=out, token=token)
         except HTTPException:
             # просто пробрасываем дальше, чтобы не превращать в 500
             raise
@@ -130,8 +135,6 @@ class SqlAlchemyAuth(AsyncAuthService):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Внутренняя ошибка сервера: {str(e)}"
             )
-
-        return AuthResponse(user_data=out, token=token)
 
     async def logout(self, id_user: int, ip: str, user_agent: str, access_token: str) -> None:
         try:
@@ -170,6 +173,16 @@ class SqlAlchemyAuth(AsyncAuthService):
                     user_agent=user_agent,
                     client_id=oauth_client,
                 )
+                res = None
+
+                if user_data.meta_data.get("type") == "employer":
+                    res = await self.uow.user_repo.update_role_users(user.id, role_id=2)
+                elif user_data.meta_data.get("type") == "executor":
+                    res = await self.uow.user_repo.update_role_users(user.id, role_id=3)
+
+                if res is not None:
+                    user.role_id = res.role_id
+
                 session: Optional[OutSession] = await self.session_service.open_session(session_data)
 
         except IntegrityError as e:
@@ -302,7 +315,7 @@ class SqlAlchemyAuth(AsyncAuthService):
                 else:
                     # 5) подготовим данные для создания локального пользователя
                     # user_name обязателен для твоей схемы — делаем fallback если telegram.username отсутствует
-                    username = user_data.get("username") or f"tg_{provider_user_id}"
+                    username = user_data.get("username") or f"user_{provider_user_id}"
 
                     user_create_payload = UserCreateProvide(
                         user_name=username,

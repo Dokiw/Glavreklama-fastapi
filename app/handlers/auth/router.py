@@ -37,6 +37,14 @@ async def login_via_bots(
         request: Request,
         auth_service: AuthServiceDep
 ):
+    """
+    Необходимо для авторизации через бота телеграм
+    :param log_in_user:
+    :param request:
+    :param auth_service:
+    :return:
+    """
+
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")

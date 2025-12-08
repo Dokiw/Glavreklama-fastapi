@@ -4,7 +4,7 @@ from app.handlers.auth.schemas import (
     OutUser,
     UserCreate,
     LogInUser,
-    AuthResponse, AuthResponseProvide, UserCreateProvide, LogInUserBot
+    AuthResponse, AuthResponseProvide, UserCreateProvide, LogInUserBot, UserUpdate
 )
 from app.handlers.auth.dto import UserAuthData
 from app.handlers.providers.schemas import ProviderRegisterRequest, ProviderLoginRequest
@@ -26,6 +26,7 @@ class AsyncRoleRepository(Protocol):
         ...
 
 
+
 # для работы с пользователем
 class AsyncUserRepository(Protocol):
     """Абстракция репозитория для работы с пользователями (асинхронная)."""
@@ -37,6 +38,9 @@ class AsyncUserRepository(Protocol):
         ...
 
     async def create_user(self, user_in: UserCreate) -> OutUser:
+        ...
+
+    async def update_user(self, user_data: UserUpdate) -> Optional[OutUser]:
         ...
 
     async def create_user_provide(self, user_in: UserCreateProvide) -> OutUser:

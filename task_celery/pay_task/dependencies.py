@@ -4,12 +4,11 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.abs.unit_of_work import IUnitOfWorkSubtraction, IUnitOfWorkSession, IUnitOfWorkWallet
+from app.core.abs.unit_of_work import IUnitOfWorkSubtraction
 from app.db.session import get_db
-from app.handlers.pay.UOW import IUnitOfWorkPayment, SqlAlchemyUnitOfWorkWallet
+from app.handlers.pay.UOW import SqlAlchemyUnitOfWorkWallet
 from app.handlers.pay.dependencies import walletServiceDep
-from app.handlers.pay.interfaces import AsyncPaymentService
-from app.handlers.pay.service import SqlAlchemyServicePayment, SqlAlchemyServiceWallet
+from app.handlers.pay.service import SqlAlchemyServiceWallet
 from app.handlers.session.UOW import SqlAlchemyUnitOfWork
 from app.handlers.session.dependencies import SessionServiceDep
 from app.handlers.session.service import SqlAlchemyServiceSession, SqlAlchemyServiceOauthClient, \

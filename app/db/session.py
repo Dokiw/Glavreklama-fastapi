@@ -25,3 +25,5 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         yield session
         # session автоматически закроется и await'ится при выходе
+
+

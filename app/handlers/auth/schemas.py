@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, EmailStr, Field
 
 from app.handlers.providers.schemas import ProviderOut, ProviderLoginRequest
@@ -11,6 +11,19 @@ class UserCreate(BaseModel):
     password: str = Field(..., alias="passUser")
     first_name: Optional[str] = Field(None, alias="firstName")
     last_name: Optional[str] = Field(None, alias="lastName")
+    meta_data: Optional[Dict[str, Any]] = Field(None, alias="metaData")
+
+    class Config:
+        validate_by_name = True
+        # todo можно добавить валидации/регулярки для username, длину пароля и т.д.
+
+
+class UserUpdate(BaseModel):
+    user_id: int = Field(...)
+    user_name: Optional[str] = Field(None)
+    first_name: Optional[str] = Field(None)
+    last_name: Optional[str] = Field(None)
+    meta_data: Optional[Dict[str, Any]] = Field(None)
 
     class Config:
         validate_by_name = True
