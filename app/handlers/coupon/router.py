@@ -13,6 +13,10 @@ router = APIRouter(prefix="/coupon", tags=["coupon"])
 
 @router.get("/")
 async def hub():
+    """
+    Используется для возврата 200-го статуса на главной странице FastApi()
+    :return:
+    """
     return HTTPException(200, 'Status - True')
 
 
@@ -24,6 +28,17 @@ async def create_coupon(
         coupon_service: couponServiceDep,
         access_token: str = Depends(get_token)
 ):
+    """
+    Создание купона, принимает имя купона и id пользователя, собирает ip и user-agent,
+    формирует данные проверки сессии и данные для создания купона, передаёт их в сервис
+    и возвращает результат операции
+    :param name:
+    :param user_id:
+    :param request:
+    :param coupon_service:
+    :param access_token:
+    :return:
+    """
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -53,6 +68,16 @@ async def used_coupon(
         coupon_service: couponServiceDep,
         access_token: str = Depends(get_token)
 ):
+    """
+    Использование купона, принимает токен купона и id пользователя, собирает ip и user-agent,
+    формирует данные проверки сессии, передаёт их в сервис и возвращает результат операции
+    :param token:
+    :param user_id:
+    :param request:
+    :param coupon_service:
+    :param access_token:
+    :return:
+    """
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -75,6 +100,16 @@ async def used_any_coupon(
         coupon_service: couponServiceDep,
         access_token: str = Depends(get_token)
 ):
+    """
+
+    :param token:
+    :param user_id:
+    :param user_admin_id:
+    :param request:
+    :param coupon_service:
+    :param access_token:
+    :return:
+    """
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -96,6 +131,15 @@ async def get_by_user_id(
         coupon_service: couponServiceDep,
         access_token: str = Depends(get_token)
 ):
+    """
+    Получение купонов пользователя, принимает id пользователя, собирает ip и user-agent,
+    формирует данные проверки сессии, передаёт их в сервис и возвращает результат операции
+    :param user_id:
+    :param request:
+    :param coupon_service:
+    :param access_token:
+    :return:
+    """
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -118,6 +162,15 @@ async def get_by_any_user_id(
         coupon_service: couponServiceDep,
         access_token: str = Depends(get_token)
 ):
+    """
+
+    :param user_id:
+    :param admin_user_id:
+    :param request:
+    :param coupon_service:
+    :param access_token:
+    :return:
+    """
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -140,6 +193,17 @@ async def get_info_by_coupon_id(
         coupon_service: couponServiceDep,
         access_token: str = Depends(get_token)
 ):
+    """
+    Получение информации о купоне по id, принимает id купона и id пользователя,
+    собирает ip и user-agent, формирует данные проверки сессии, передаёт их в сервис
+    и возвращает результат операции
+    :param id:
+    :param user_id:
+    :param request:
+    :param coupon_service:
+    :param access_token:
+    :return:
+    """
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -162,6 +226,16 @@ async def get_by_token_hash(
         coupon_service: couponServiceDep,
         access_token: str = Depends(get_token)
 ):
+    """
+    Получение купона по хэшу токена, принимает токен и id пользователя, собирает ip и user-agent,
+    формирует данные проверки сессии, передаёт их в сервис и возвращает результат операции
+    :param token:
+    :param user_id:
+    :param request:
+    :param coupon_service:
+    :param access_token:
+    :return:
+    """
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
