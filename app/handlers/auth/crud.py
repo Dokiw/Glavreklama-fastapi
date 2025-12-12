@@ -38,8 +38,7 @@ class UserRepository(AsyncUserRepository):
             .values(
                 user_name=user_data.user_name,
                 first_name=user_data.first_name,
-                last_name=user_data.last_name,
-                meta_data=user_data.meta_data,
+                last_name=user_data.last_name
             )
             .returning(UserModel)
         )

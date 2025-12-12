@@ -49,13 +49,13 @@ class SqlAlchemyAuth(AsyncAuthService):
         )
         auth_provide: Optional[ProviderOut] = await self.provide_user.login_provider_user(provider_login)
 
-        auth: Optional[UserAuthData] = await self.uow.user_repo.get_by_id(auth_provide.user_id)
+        auth: Optional[OutUser] = await self.uow.user_repo.get_by_id(auth_provide.user_id)
 
         await self.oauth_client_service.check_oauth_client(
             check_data=CheckOauthClient(client_id=str(login_data.client_id),
                                         client_secret=str(login_data.client_secret)))
 
-        if auth.user_name != login_data.username:
+        if auth.username != login_data.username:
             await self.uow.user_repo.update_user(UserUpdate(user_id=auth.id,user_name=login_data.username))
 
         if str(auth_provide.provider_user_id) != str(login_data.provider_user_id):
@@ -76,7 +76,7 @@ class SqlAlchemyAuth(AsyncAuthService):
         # Формируем OutUser напрямую из auth (полей dataclass)
         out = OutUser(
             id=auth.id,
-            username=auth.user_name,
+            username=auth.username,
             email=auth.email,
             first_name=auth.first_name,
             last_name=auth.last_name,

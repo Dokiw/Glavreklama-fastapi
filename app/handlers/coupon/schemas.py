@@ -15,6 +15,7 @@ class CreateCoupon(BaseModel):
     class Config:
         validate_by_name = True
 
+
 class CreateCouponService(BaseModel):
     user_id: int = Field(..., alias="UserId")
     name: str = Field(..., alias="name")
@@ -23,6 +24,8 @@ class CreateCouponService(BaseModel):
 
     class Config:
         validate_by_name = True
+
+
 # ---- Response / Output ----
 class OutCoupon(BaseModel):
     id: int = Field(..., alias="id")
