@@ -12,10 +12,14 @@ from app.method.get_token import get_token
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
+
 @router.get("/")
 async def hub():
+    """
+    Используется для возврата 200-го статуса на главной странице FastApi()
+    :return:
+    """
     return HTTPException(200, 'Status - True')
-
 
 @router.post("/login", response_model=AuthResponse)
 async def login(
@@ -24,6 +28,15 @@ async def login(
         request: Request,
         auth_service: AuthServiceDep
 ):
+    """
+    Необходимый метод для авторизации в системе, собирает данные о пользователе,
+    передает их в сервис авторизации и возвращает ответ
+    :param oauth_client:
+    :param log_in_user:
+    :param request:
+    :param auth_service:
+    :return:
+    """
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -38,7 +51,8 @@ async def login_via_bots(
         auth_service: AuthServiceDep
 ):
     """
-    Необходимо для авторизации через бота телеграм
+    Необходимо для авторизации через бота телеграм, собирает данные о пользователе,
+    передает их в сервис авторизации и возвращает ответ
     :param log_in_user:
     :param request:
     :param auth_service:
@@ -54,6 +68,15 @@ async def login_via_bots(
 
 @router.post("/register", response_model=AuthResponse)
 async def register(oauth_client: str, user_create: UserCreate, request: Request, auth_service: AuthServiceDep):
+    """
+    Необходим для регистрации нового пользователя, собирает данные о пользователе,
+    передает их в сервис регистрации и возвращает ответ
+    :param oauth_client:
+    :param user_create:
+    :param request:
+    :param auth_service:
+    :return:
+    """
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -74,7 +97,15 @@ async def register(oauth_client: str, user_create: UserCreate, request: Request,
 @router.post("/logout")
 async def logout(auth_service: AuthServiceDep, id_user: int, request: Request, access_token: str = Depends(get_token)):
     # Получаем IP и User-Agent из запроса
-
+    """
+    Выход пользователя из системы, собирает данные о пользователе,
+    передает их в сервис выхода из системы и возвращает ответ
+    :param auth_service:
+    :param id_user:
+    :param request:
+    :param access_token:
+    :return:
+    """
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
@@ -84,6 +115,15 @@ async def logout(auth_service: AuthServiceDep, id_user: int, request: Request, a
 @router.post("/login_provider", response_model=AuthResponseProvide)
 async def register(oauth_client: str, request: Request, auth_service: AuthServiceDep,
                    login_data: ProviderLoginRequest = Body()):
+    """
+    Необходима для авторизации через внешний провайдер - telegram, google, собирает данные о пользователе,
+    передает их в сервис авторизации внешнего провайдера и возвращает ответ
+    :param oauth_client:
+    :param request:
+    :param auth_service:
+    :param login_data:
+    :return:
+    """
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -99,6 +139,15 @@ async def register_from_provider_or_get(
         auth_service: AuthServiceDep,
         payload: str = Form(...),
 ):
+    """
+    Регистрация пользователя через внешний провайдер - telegram, google, собирает данные о пользователе,
+    передает их в сервис регистрации через внешний провайдер и возвращает ответ
+    :param oauth_client:
+    :param request:
+    :param auth_service:
+    :param payload:
+    :return:
+    """
     init_data_str = payload
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
@@ -116,6 +165,18 @@ async def get_users(
         request: Request,
         access_token: str = Depends(get_token),
 ):
+    """
+    Получение списка пользователей. Принимает идентификатор пользователя, параметры пагинации
+    и токен доступа. Собирает ip и user-agent клиента, передаёт всё в сервис получения пользователей
+    и возвращает список пользователей
+    :param auth_service:
+    :param id_user:
+    :param offset:
+    :param limit:
+    :param request:
+    :param access_token:
+    :return:
+    """
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -131,6 +192,16 @@ async def get_roles(
         request: Request,
         access_token: str = Depends(get_token),
 ):
+    """
+    Получение ролей пользователя. Принимает id пользователя и токен доступа,
+    собирает ip и user-agent клиента, формирует объект проверки сессии,
+    передаёт данные в сервис получения ролей и возвращает список ролей
+    :param auth_service:
+    :param user_id:
+    :param request:
+    :param access_token:
+    :return:
+    """
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
@@ -153,6 +224,17 @@ async def update_role(
         request: Request,
         access_token: str = Depends(get_token),
 ):
+    """
+    Обновление роли пользователя. Принимает id роли и id пользователя,
+    собирает ip и user-agent клиента, формирует данные проверки сессии,
+    передаёт их в сервис обновления роли и возвращает ответ
+    :param auth_service:
+    :param role_id:
+    :param user_id:
+    :param request:
+    :param access_token:
+    :return:
+    """
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 

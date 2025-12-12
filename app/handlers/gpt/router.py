@@ -14,6 +14,10 @@ router = APIRouter(prefix="/gpt", tags=["gpt"])
 
 @router.get("/")
 async def hub():
+    """
+    Используется для возврата 200-го статуса на главной странице FastApi()
+    :return:
+    """
     return HTTPException(200, 'Status - True')
 
 
@@ -25,6 +29,16 @@ async def create_gtp_prompt(
         image_url: Optional[str] = None,
         access_token: str = Depends(get_token)
 ):
+    """
+    Создание gpt-промпта, принимает данные для генерации и id пользователя, собирает ip и user-agent,
+    формирует данные проверки сессии, передаёт их в сервис gpt и возвращает результат операции
+    :param data:
+    :param request:
+    :param gpt_service:
+    :param image_url:
+    :param access_token:
+    :return:
+    """
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
@@ -48,6 +62,16 @@ async def create_gtp_prompt(
         gpt_service: gptServiceDep,
         access_token: str = Depends(get_token)
 ):
+    """
+    Получение ключа gpt, принимает oauth_client и id пользователя, собирает ip и user-agent,
+    формирует данные проверки сессии, передаёт их в сервис gpt и возвращает результат операции.
+    :param oauth_client:
+    :param user_id:
+    :param request:
+    :param gpt_service:
+    :param access_token:
+    :return:
+    """
     # Получаем IP и User-Agent из запроса
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")

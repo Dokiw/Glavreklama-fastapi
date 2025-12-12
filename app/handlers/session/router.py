@@ -8,6 +8,10 @@ router = APIRouter(prefix="/session", tags=["session"])
 
 @router.get("/")
 async def hub():
+    """
+    Используется для возврата 200-го статуса на главной странице FastApi()
+    :return:
+    """
     return HTTPException(200,'Status - True')
 
 
@@ -30,7 +34,9 @@ async def hub():
 async def validate_session(session_service: SessionServiceDep, user_id: int,
                            refresh_token: str, oauth_client: str, request: Request):
     """
-    Метод используется для валидации сессии и обновлении рефреш-токена и сессии
+    Обновление токена, принимает id пользователя, собирает ip и user-agent,
+    формирует данные проверки сессии, передаёт их вместе с параметрами платежа в сервис
+    и возвращает результат операции
     :param session_service:
     :param user_id:
     :param refresh_token:

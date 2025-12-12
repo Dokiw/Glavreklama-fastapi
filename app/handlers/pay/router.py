@@ -32,6 +32,10 @@ router = APIRouter(prefix="/payment", tags=["payment"])
 
 @router.get("/")
 async def hub():
+    """
+    Используется для возврата 200-го статуса на главной странице FastApi()
+    :return:
+    """
     return {"status": True}
 
 
@@ -50,6 +54,24 @@ async def create_payment(
         request: Request = None,
         access_token: str = Depends(get_token),
 ):
+    """
+    Создание платежа, принимает id пользователя, id кошелька, сумму и return_url, собирает ip и user-agent,
+    формирует данные проверки сессии, передаёт их вместе с параметрами платежа в сервис
+    и возвращает результат операции
+    :param user_id:
+    :param wallet_id:
+    :param amount:
+    :param return_url:
+    :param payment_service:
+    :param confirmation_type:
+    :param description:
+    :param currency:
+    :param capture:
+    :param metadata_payments:
+    :param request:
+    :param access_token:
+    :return:
+    """
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
@@ -90,6 +112,24 @@ async def create_payment_single(
         request: Request = None,
         access_token: str = Depends(get_token),
 ):
+    """
+    Создание одиночного платежа, принимает payment_service, id пользователя, id кошелька, сумму, return_url,
+    confirmation_type, description, currency, capture, metadata_payments, собирает ip и user-agent,
+    формирует данные проверки сессии и данные платежа, передаёт их в сервис и возвращает результат операции
+    :param payment_service:
+    :param user_id:
+    :param wallet_id:
+    :param amount:
+    :param return_url:
+    :param confirmation_type:
+    :param description:
+    :param currency:
+    :param capture:
+    :param metadata_payments:
+    :param request:
+    :param access_token:
+    :return:
+    """
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
@@ -147,6 +187,15 @@ async def get_by_user_id(
         request: Request,
         access_token: str = Depends(get_token),
 ):
+    """
+    Получение платежей пользователя, принимает payment_service и id пользователя, собирает ip и user-agent,
+    формирует данные проверки сессии, передаёт их в сервис и возвращает результат операции
+    :param payment_service:
+    :param user_id:
+    :param request:
+    :param access_token:
+    :return:
+    """
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
@@ -168,6 +217,16 @@ async def get_by_id(
         request: Request,
         access_token: str = Depends(get_token),
 ):
+    """
+    Получение платежа по id, принимает payment_service, id платежа и id пользователя, собирает ip и user-agent,
+    формирует данные проверки сессии, передаёт их в сервис и возвращает результат операции
+    :param payment_service:
+    :param payments_id:
+    :param user_id:
+    :param request:
+    :param access_token:
+    :return:
+    """
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
@@ -189,6 +248,16 @@ async def get_by_idempotency(
         request: Request,
         access_token: str = Depends(get_token),
 ):
+    """
+    Получение платежа по idempotency_id, принимает payment_service, idempotency_id и id пользователя, собирает ip и user-agent,
+    формирует данные проверки сессии, передаёт их в сервис и возвращает результат операции
+    :param payment_service:
+    :param idempotency_id:
+    :param user_id:
+    :param request:
+    :param access_token:
+    :return:
+    """
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
@@ -305,6 +374,16 @@ async def get_wallet_by_id(
         request: Request,
         access_token: str = Depends(get_token),
 ):
+    """
+    Получение кошелька по id, принимает wallet_service, id кошелька и id пользователя, собирает ip и user-agent,
+    формирует данные проверки сессии, передаёт их в сервис и возвращает результат операции
+    :param wallet_service:
+    :param id:
+    :param user_id:
+    :param request:
+    :param access_token:
+    :return:
+    """
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
@@ -325,6 +404,15 @@ async def duty_payment(
         request: Request,
         access_token: str = Depends(get_token),
 ):
+    """
+    Вычисление обязательного ежемесячного платежа пользователя, принимает subtraction_service и id пользователя, собирает ip и user-agent,
+    формирует данные проверки сессии и данные для списания, передаёт их в сервис и возвращает результат операции
+    :param subtraction_service:
+    :param user_id:
+    :param request:
+    :param access_token:
+    :return:
+    """
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
@@ -359,6 +447,16 @@ async def stop_payment(
         request: Request,
         access_token: str = Depends(get_token),
 ):
+    """
+    Остановка регулярного платежа пользователя, принимает subtraction_service и id пользователя, собирает ip и user-agent,
+    формирует данные проверки сессии и данные для обновления статуса платежа, передаёт их в сервис
+    и возвращает результат операции.
+    :param subtraction_service:
+    :param user_id:
+    :param request:
+    :param access_token:
+    :return:
+    """
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
