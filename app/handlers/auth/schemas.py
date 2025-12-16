@@ -6,12 +6,12 @@ from app.handlers.providers.schemas import ProviderOut, ProviderLoginRequest
 
 # ---- Request / Input ----
 class UserCreate(BaseModel):
-    user_name: str = Field(..., alias="userName")
+    user_name: str = Field(..., alias="UserName")
     email: Optional[EmailStr] = None
-    password: str = Field(..., alias="passUser")
-    first_name: Optional[str] = Field(None, alias="firstName")
-    last_name: Optional[str] = Field(None, alias="lastName")
-    meta_data: Optional[Dict[str, Any]] = Field(None, alias="metaData")
+    password: str = Field(..., alias="UserPass")
+    first_name: Optional[str] = Field(None, alias="FirstName")
+    last_name: Optional[str] = Field(None, alias="LastName")
+    meta_data: Optional[Dict[str, Any]] = Field(None, alias="MetaData")
 
     class Config:
         validate_by_name = True
@@ -31,11 +31,11 @@ class UserUpdate(BaseModel):
 
 
 class UserCreateProvide(UserCreate):
-    user_name: str = Field(..., alias="userName")
-    email: Optional[EmailStr] = Field(None, alias="email")
-    password: Optional[str] = Field(None, alias="passUser")
-    first_name: Optional[str] = Field(None, alias="firstName")
-    last_name: Optional[str] = Field(None, alias="lastName")
+    user_name: str = Field(..., alias="UserName")
+    email: Optional[EmailStr] = Field(None, alias="Email")
+    password: Optional[str] = Field(None, alias="UserPass")
+    first_name: Optional[str] = Field(None, alias="FirstName")
+    last_name: Optional[str] = Field(None, alias="LastName")
 
     class Config:
         validate_by_name = True
@@ -43,19 +43,19 @@ class UserCreateProvide(UserCreate):
 
 
 class LogInUser(BaseModel):
-    username: str = Field(..., alias="userName")
-    password: str = Field(..., alias="passUser")
+    username: str = Field(..., alias="UserName")
+    password: str = Field(..., alias="UserPass")
 
     class Config:
         validate_by_name = True
 
 
 class LogInUserBot(BaseModel):
-    username: str = Field(..., alias="userName")
-    provider_user_id: int = Field(..., alias="providerUserId")
+    username: str = Field(..., alias="UserName")
+    provider_user_id: int = Field(..., alias="ProviderUserId")
 
-    client_id: Optional[str] = Field(None, alias="clientId")
-    client_secret: Optional[str] = Field(None, alias="clientSecret")
+    client_id: Optional[str] = Field(None, alias="ClientId")
+    client_secret: Optional[str] = Field(None, alias="ClientSecret")
 
     class Config:
         validate_by_name = True
@@ -66,7 +66,7 @@ class InitDataRequest(BaseModel):
 
 
 class LogOutUser(BaseModel):
-    user_id: int = Field(..., alias="idUser")
+    user_id: int = Field(..., alias="UserId")
 
     class Config:
         validate_by_name = True
@@ -74,11 +74,11 @@ class LogOutUser(BaseModel):
 
 # ---- Response / Output ----
 class OutUser(BaseModel):
-    id: int = Field(..., alias="idUser")
-    username: str = Field(..., alias="user")
+    id: int = Field(..., alias="UserId")
+    username: str = Field(..., alias="UserName")
     email: Optional[EmailStr] = None
-    first_name: Optional[str] = Field(None, alias="firstName")
-    last_name: Optional[str] = Field(None, alias="lastName")
+    first_name: Optional[str] = Field(None, alias="FirstName")
+    last_name: Optional[str] = Field(None, alias="LastName")
     role_id: Optional[int] = Field(None, alias="RoleId")
 
     class Config:
@@ -111,8 +111,8 @@ class Token(BaseModel):
 
 
 class AuthResponse(BaseModel):
-    user_data: OutUser = Field(..., alias="userData")
-    token: Token = Field(..., alias="tokenUser")
+    user_data: OutUser = Field(..., alias="UserData")
+    token: Token = Field(..., alias="UserToken")
 
     class Config:
         from_attributes = True
@@ -120,9 +120,9 @@ class AuthResponse(BaseModel):
 
 
 class AuthResponseProvide(BaseModel):
-    user_data: OutUser = Field(..., alias="userData")
-    token: Token = Field(..., alias="tokenUser")
-    provide_data: ProviderOut = Field(..., alias="provideData")
+    user_data: OutUser = Field(..., alias="UserData")
+    token: Token = Field(..., alias="UserToken")
+    provide_data: ProviderOut = Field(..., alias="ProvideData")
 
     class Config:
         from_attributes = True

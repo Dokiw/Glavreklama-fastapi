@@ -9,7 +9,7 @@ from app.handlers.providers.schemas import ProviderOut, ProviderLoginRequest
 class GPTCreate(BaseModel):
     model: str = Field(..., alias="Model")
     system_prompt: str = Field(..., alias="SystemPrompt")
-    user_id: int = Field(..., alias="Userid")
+    user_id: int = Field(..., alias="UserId")
 
     class Config:
         validate_by_name = True
@@ -18,7 +18,7 @@ class GPTCreate(BaseModel):
 # ---- Response / Output ----
 
 class OutGPTkey(BaseModel):
-    user_id: int = Field(..., alias="Userid")
+    user_id: int = Field(..., alias="UserId")
     data: str = Field(..., alias="Data")
 
 

@@ -56,7 +56,7 @@ class CreatePaymentsService(BaseModel):
     description: Optional[str] = Field(None, alias="Description")
     currency: str = Field(..., alias="Currency")
     capture: bool = Field(..., alias="Capture")
-    metadata_payments: Optional[dict] = Field(None, alias="MetadataPayments")
+    metadata_payments: Optional[dict] = Field(None, alias="MetaDataPayments")
 
     class Config:
         validate_by_name = True
@@ -86,7 +86,7 @@ class CreatePaymentsApi(BaseModel):
     description: Optional[str] = Field(None, alias="Description")
     currency: str = Field(..., alias="Currency")
     capture: bool = Field(..., alias="Capture")
-    metadata_payments: Optional[dict] = Field(None, alias="MetadataPayments")
+    metadata_payments: Optional[dict] = Field(None, alias="MetaDataPayments")
 
     class Config:
         validate_by_name = True
