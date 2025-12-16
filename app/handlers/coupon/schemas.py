@@ -6,11 +6,11 @@ from datetime import datetime
 # ---- Request / Input ----
 class CreateCoupon(BaseModel):
     user_id: int = Field(..., alias="UserId")
-    name: str = Field(..., alias="name")
-    description: Optional[str] = Field(None, alias="idUser")
-    promo_count: int = Field(..., alias="idUser")
+    name: str = Field(..., alias="Name")
+    description: Optional[str] = Field(None, alias="UserID")
+    promo_count: int = Field(..., alias="UserId")
     status: Optional[bool] = Field(None, alias="Status")
-    token_hash: str = Field(..., alias="tokenHash")
+    token_hash: str = Field(..., alias="TokenHash")
 
     class Config:
         validate_by_name = True
@@ -18,8 +18,8 @@ class CreateCoupon(BaseModel):
 
 class CreateCouponService(BaseModel):
     user_id: int = Field(..., alias="UserId")
-    name: str = Field(..., alias="name")
-    description: Optional[str] = Field(None, alias="idUser")
+    name: str = Field(..., alias="Name")
+    description: Optional[str] = Field(None, alias="UserId")
     status: Optional[bool] = Field(None, alias="Status")
 
     class Config:
@@ -28,14 +28,14 @@ class CreateCouponService(BaseModel):
 
 # ---- Response / Output ----
 class OutCoupon(BaseModel):
-    id: int = Field(..., alias="id")
-    user_id: int = Field(..., alias="userId")
-    name: str = Field(..., alias="name")
-    description: Optional[str] = Field(None, alias="description")
-    promo_count: int = Field(..., alias="promoCount")
-    status: Optional[bool] = Field(None, alias="status")
-    token_hash: Optional[str] = Field(None, alias="tokenHash")
-    created_at: datetime = Field(..., alias="createdAt")
+    id: int = Field(..., alias="Id")
+    user_id: int = Field(..., alias="UserId")
+    name: str = Field(..., alias="Name")
+    description: Optional[str] = Field(None, alias="Description")
+    promo_count: int = Field(..., alias="PromoCount")
+    status: Optional[bool] = Field(None, alias="Status")
+    token_hash: Optional[str] = Field(None, alias="TokenHash")
+    created_at: datetime = Field(..., alias="CreatedAt")
 
     class Config:
         populate_by_name = True  # чтобы можно было и по алиасам, и по имени

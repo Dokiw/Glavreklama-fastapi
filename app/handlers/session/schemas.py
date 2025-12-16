@@ -6,41 +6,41 @@ from pydantic import BaseModel, EmailStr, Field
 # ---- Request / Input ---- SESSION
 class OpenSession(BaseModel):
     user_id: int = Field(..., alias="userId")
-    id_address: Optional[str] = Field(None, alias="ipAddress")
-    user_agent: Optional[str] = Field(None, alias="userAgent")
+    id_address: Optional[str] = Field(None, alias="AddressId")
+    user_agent: Optional[str] = Field(None, alias="UserAgent")
 
-    client_id: Optional[str] = Field(None, alias="clientId")
-    client_secret: Optional[str] = Field(None, alias="clientSecret")
+    client_id: Optional[str] = Field(None, alias="ClientId")
+    client_secret: Optional[str] = Field(None, alias="ClientSecret")
 
     class Config:
         validate_by_name = True
 
 
 class OpenSessionRepo(BaseModel):
-    user_id: int = Field(..., alias="userId")
-    client_id: Optional[int] = Field(None, alias="clientId")
-    id_address: Optional[str] = Field(None, alias="ipAddress")
-    user_agent: Optional[str] = Field(None, alias="userAgent")
+    user_id: int = Field(..., alias="UserId")
+    client_id: Optional[int] = Field(None, alias="ClientId")
+    id_address: Optional[str] = Field(None, alias="AddressId")
+    user_agent: Optional[str] = Field(None, alias="UserAgent")
 
     class Config:
         validate_by_name = True
 
 
 class CloseSession(BaseModel):
-    id: int = Field(..., alias="sessionId")
+    id: int = Field(..., alias="SessionId")
 
     class Config:
         validate_by_name = True
 
 
 class RefreshSession(BaseModel):
-    id: int = Field(..., alias="sessionId")
-    user_id: int = Field(..., alias="userId")
-    client_id: Optional[int] = Field(None, alias="clientId")
-    access_token: Optional[str] = Field(None, alias="accessToken")
-    refresh_token: Optional[str] = Field(None, alias="refreshToken")
-    ip_address: Optional[str] = Field(None, alias="ipAddress")
-    user_agent: Optional[str] = Field(None, alias="userAgent")
+    id: int = Field(..., alias="SessionId")
+    user_id: int = Field(..., alias="UserId")
+    client_id: Optional[int] = Field(None, alias="ClientId")
+    access_token: Optional[str] = Field(None, alias="AccessToken")
+    refresh_token: Optional[str] = Field(None, alias="RefreshToken")
+    ip_address: Optional[str] = Field(None, alias="AddressId")
+    user_agent: Optional[str] = Field(None, alias="UserAgent")
 
     class Config:
         validate_by_name = True
@@ -49,8 +49,8 @@ class RefreshSession(BaseModel):
 class CheckSessionAccessToken(BaseModel):
     user_id: int = Field(..., alias="UserId")
     access_token: str = Field(..., alias="AccessToken")
-    ip_address: str = Field(..., alias="ipAddress")
-    user_agent: str = Field(..., alias="userAgent")
+    ip_address: str = Field(..., alias="AddressId")
+    user_agent: str = Field(..., alias="UserAgent")
 
     class Config:
         validate_by_name = True
@@ -61,7 +61,7 @@ class CheckSessionRefreshToken(BaseModel):
     refresh_token: str = Field(..., alias="refreshToken")
     ip_address: Optional[str] = Field(None, alias="ipAddress")
     user_agent: Optional[str] = Field(None, alias="userAgent")
-    oauth_client: str = Field(..., alias="oauth_Client")
+    oauth_client: str = Field(..., alias="ClientOauth")
 
     class Config:
         validate_by_name = True
@@ -70,8 +70,8 @@ class CheckSessionRefreshToken(BaseModel):
 class LogoutSession(BaseModel):
     user_id: int = Field(..., alias="UserId")
     access_token: str = Field(..., alias="AccessToken")
-    id_address: str = Field(..., alias="ipAddress")
-    user_agent: str = Field(..., alias="userAgent")
+    id_address: str = Field(..., alias="AddressId")
+    user_agent: str = Field(..., alias="UserAgent")
 
     class Config:
         validate_by_name = True
@@ -79,16 +79,16 @@ class LogoutSession(BaseModel):
 
 # ---- Response / Output ---- SESSION
 class OutSession(BaseModel):
-    id: int = Field(..., alias="sessionId")
-    user_id: int = Field(..., alias="userId")
-    client_id: Optional[int] = Field(None, alias="clientId")
-    access_token: Optional[str] = Field(None, alias="accessToken")
-    refresh_token: Optional[str] = Field(None, alias="refreshToken")
-    is_active: Optional[bool] = Field(None, alias="isActive")
-    logged_out_at: Optional[dt.datetime] = Field(None, alias="loggedOutAt")
-    created_at: Optional[dt.datetime] = Field(None, alias="createdAt")
-    last_used_at: Optional[dt.datetime] = Field(None, alias="lastUserAt")
-    ip_address: Optional[str] = Field(None, alias="IpAddress")
+    id: int = Field(..., alias="SessionId")
+    user_id: int = Field(..., alias="UserId")
+    client_id: Optional[int] = Field(None, alias="ClientId")
+    access_token: Optional[str] = Field(None, alias="AccessToken")
+    refresh_token: Optional[str] = Field(None, alias="RefreshToken")
+    is_active: Optional[bool] = Field(None, alias="IsActive")
+    logged_out_at: Optional[dt.datetime] = Field(None, alias="LoggedOutAt")
+    created_at: Optional[dt.datetime] = Field(None, alias="CreatedAt")
+    last_used_at: Optional[dt.datetime] = Field(None, alias="LastUserAt")
+    ip_address: Optional[str] = Field(None, alias="AddressId")
     user_agent: Optional[str] = Field(None, alias="UserAgent")
 
     class Config:
@@ -99,7 +99,7 @@ class OutSession(BaseModel):
 # ---- Request / Input ---- RefreshToken
 
 class CreateRefreshToken(BaseModel):
-    session_id: int = Field(..., alias="sessionId")
+    session_id: int = Field(..., alias="SessionId")
     expires_at: Optional[dt.datetime] = Field(None, alias="ExpiresAt")
 
     model_config = {
@@ -121,7 +121,7 @@ class UpdateRefreshToken(BaseModel):
 
 class OutRefreshToken(BaseModel):
     id: int = Field(..., alias="Id")
-    session_id: int = Field(..., alias="sessionId")
+    session_id: int = Field(..., alias="SessionId")
     revoked: bool = Field(..., alias="Revoked")
     created_at: dt.datetime = Field(..., alias="CreatedAt")
     expires_at: dt.datetime = Field(..., alias="ExpiresAt")
@@ -173,7 +173,7 @@ class CheckOauthClient(BaseModel):
 
 
 class OutOauthClient(BaseModel):
-    id: int = Field(..., alias="id")
+    id: int = Field(..., alias="Id")
     name: str = Field(..., alias="Name")
     client_id: str = Field(..., alias="ClientId")
     client_secret: Optional[str] = Field(None, alias="ClientSecret")
