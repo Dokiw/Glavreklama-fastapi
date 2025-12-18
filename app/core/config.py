@@ -44,6 +44,21 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     SHOP_ID: str
 
+    # === Настройки (лучше читать из переменных окружения) ===
+    SMTP_HOST: str
+    SMTP_PORT: str
+    SMTP_USERNAME: str
+    SMTP_PASSWORD: str
+    FROM_ADDRESS: str
+    CONFIRMATION_BASE_URL: str
+
+    # Секрет для подписи токенов (обязательно заменить на безопасный секрет)
+    TOKEN_SECRET: str
+    TOKEN_SALT: str
+
+
+
+
     class Config:
         env_file = ENV_PATH  # чтобы pydantic тоже читал из .env
 

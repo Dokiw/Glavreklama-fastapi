@@ -91,10 +91,16 @@ class AsyncAuthService(Protocol):
             Optional)[List[OutUser]]:
         ...
 
+    async def get_users_internal(self, id_user: int) -> Optional[OutUser]:
+        ...
+
     async def update_role(self, role_id: int, check_data: CheckSessionAccessToken) -> Optional[OutUser]:
         ...
 
     async def get_roles(self, check_data: CheckSessionAccessToken) -> List[Optional[RoleUser]]:
+        ...
+
+    async def update_user_data(self, data: UserUpdate) -> Optional[OutUser]:
         ...
 
 

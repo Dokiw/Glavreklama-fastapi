@@ -50,6 +50,7 @@ class SqlAlchemyServiceSession(AsyncSessionService):
                 detail=f"Внутренняя ошибка сервера: {str(e)}"
             )
 
+
     async def open_session(self, session_data: OpenSession) -> OutSession:
         try:
             async with self.uow:

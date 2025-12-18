@@ -4,13 +4,14 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Body, Form
 
 from app.handlers.auth.dependencies import AuthServiceDep
 from app.handlers.auth.schemas import LogInUser, UserCreate, AuthResponse, RoleUser, AuthResponseProvide, PaginateUser, \
-    LogInUserBot
+    LogInUserBot, UserUpdate, OutUser
 from app.handlers.providers.schemas import ProviderLoginRequest
+from app.handlers.session.dependencies import SessionServiceDep
 from app.handlers.session.schemas import CheckSessionAccessToken
 from app.method.get_token import get_token
+from app.method.smtp import confirm_token, send_confirmation_email_for_change
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
-
 
 
 @router.get("/")
@@ -20,6 +21,23 @@ async def hub():
     :return:
     """
     return HTTPException(200, 'Status - True')
+
+
+@router.get("/confirm_email")
+async def confirm_email(token: str,
+                        uid: str,
+                        auth_service: AuthServiceDep):
+    email = confirm_token(token, expiration=3600)  # 1 час жизни токена
+    if email is None:
+        raise HTTPException(status_code=400, detail="Неверный или просроченный токен")
+
+    data = UserUpdate(
+        user_id=int(uid),
+        email=email
+    )
+
+    return await auth_service.update_user_data(data=data)
+
 
 @router.post("/login", response_model=AuthResponse)
 async def login(
@@ -205,7 +223,6 @@ async def get_roles(
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
-
     csat = CheckSessionAccessToken(
         user_id=user_id,
         ip_address=ip,
@@ -247,3 +264,27 @@ async def update_role(
 
     return await auth_service.update_role(role_id=role_id, check_data=csat)
 
+
+@router.post("/update_user_email")
+async def update_user_email(
+        session_service: SessionServiceDep,
+        user_data: UserUpdate,
+        request: Request,
+        access_token: str = Depends(get_token),
+):
+    """
+    Обновление информации пользователя. Принимает id пользователя и data,
+    собирает ip и user-agent клиента, формирует данные проверки сессии,
+    передаёт их в сервис обновления роли и возвращает ответ
+    """
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "")
+
+    csat = CheckSessionAccessToken(
+        user_id=user_data.user_id,
+        ip_address=ip,
+        user_agent=user_agent,
+        access_token=access_token,
+    )
+    await session_service.validate_access_token_session(csat)
+    return await send_confirmation_email_for_change(user_id=str(user_data.user_id) ,new_email=user_data.email)

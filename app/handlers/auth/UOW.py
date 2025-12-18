@@ -4,6 +4,7 @@ from app.core.abs.unit_of_work import IUnitOfWorkAuth
 from app.handlers.auth.crud import UserRepository, RoleRepository
 from app.handlers.auth.interfaces import AsyncUserRepository, AsyncRoleRepository
 
+
 class SqlAlchemyUnitOfWork(IUnitOfWorkAuth):
     def __init__(self, session_factory):
         self.session_factory = session_factory

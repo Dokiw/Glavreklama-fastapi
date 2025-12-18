@@ -31,22 +31,31 @@ class UserRepository(AsyncUserRepository):
         )
 
     async def update_user(self, user_data: UserUpdate) -> Optional[OutUser]:
+        # Собираем только те поля, которые реально пришли (не None)
+        update_values = {
+            "user_name": user_data.user_name,
+            "first_name": user_data.first_name,
+            "last_name": user_data.last_name,
+            "email": user_data.email,
+        }
+
+        update_values = {k: v for k, v in update_values.items() if v is not None}
+
+        # Если обновлять нечего — сразу выходим
+        if not update_values:
+            return None
 
         stmt = (
             update(UserModel)
             .where(UserModel.id == user_data.user_id)
-            .values(
-                user_name=user_data.user_name,
-                first_name=user_data.first_name,
-                last_name=user_data.last_name
-            )
+            .values(**update_values)
             .returning(UserModel)
         )
 
         result = await self.db.execute(stmt)
-        result = result.scalar_one_or_none()
+        user = result.scalar_one_or_none()
 
-        return self._to_dto(result) if result else None
+        return self._to_dto(user) if user else None
 
     async def create_user(self, user_in: UserCreate) -> OutUser:
         m = UserModel()

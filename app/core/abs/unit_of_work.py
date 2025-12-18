@@ -10,6 +10,7 @@ from app.handlers.session.interfaces import AsyncSessionRepository, AsyncRefresh
     AsyncOauthClientRepository
 
 
+
 class IUnitOfWorkSession(AbstractAsyncContextManager, ABC):
     sessions: AsyncSessionRepository
     refresh_tokens: AsyncRefreshTokenRepository

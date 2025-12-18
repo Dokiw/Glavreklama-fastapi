@@ -40,6 +40,10 @@ class SqlAlchemyAuth(AsyncAuthService):
         self.oauth_client_service = oauth_client_service
 
     @transactional()
+    async def get_users_internal(self, id_user: int) -> Optional[OutUser]:
+        return await self.uow.user_repo.get_by_id(id_user)
+
+    @transactional()
     async def login_via_bots(self, login_data: LogInUserBot, ip: str,
                              user_agent: str) -> AuthResponse:
 
@@ -56,7 +60,7 @@ class SqlAlchemyAuth(AsyncAuthService):
                                         client_secret=str(login_data.client_secret)))
 
         if auth.username != login_data.username:
-            await self.uow.user_repo.update_user(UserUpdate(user_id=auth.id,user_name=login_data.username))
+            await self.uow.user_repo.update_user(UserUpdate(user_id=auth.id, user_name=login_data.username))
 
         if str(auth_provide.provider_user_id) != str(login_data.provider_user_id):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
@@ -422,6 +426,12 @@ class SqlAlchemyAuth(AsyncAuthService):
             Offset_current=offset,
         )
         return pag_user
+
+    @transactional()
+    async def update_user_data(self, data: UserUpdate) -> Optional[OutUser]:
+        # TODO - НАДО СДЕЛАТЬ ЗАЩИТУ И ПОДТВЕРЖДЕНИЕ НА ПОЧТИ ПО ПРИВЯЗКЕ
+        result = await self.uow.user_repo.update_user(data)
+        return result
 
     @transactional()
     async def update_role(self, role_id: int, check_data: CheckSessionAccessToken) -> Optional[OutUser]:

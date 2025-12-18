@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.handlers.providers.schemas import ProviderOut, ProviderLoginRequest
 
@@ -24,10 +24,24 @@ class UserUpdate(BaseModel):
     first_name: Optional[str] = Field(None)
     last_name: Optional[str] = Field(None)
     meta_data: Optional[Dict[str, Any]] = Field(None)
+    email: Optional[EmailStr] = Field(None)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def validate_email(cls, value):
+        if value is None:
+            return value
+
+        if isinstance(value, str):
+            value = value.strip().lower()
+
+        if not value:
+            raise ValueError("Email must not be empty")
+
+        return value
 
     class Config:
         validate_by_name = True
-        # todo можно добавить валидации/регулярки для username, длину пароля и т.д.
 
 
 class UserCreateProvide(UserCreate):

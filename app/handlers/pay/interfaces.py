@@ -139,6 +139,7 @@ class AsyncApiPaymentService(Protocol):
 
     async def create_payment(
             self,
+            email: str,
             amount: Any,
             return_url: str,
             description: str,

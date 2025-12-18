@@ -18,6 +18,7 @@ from yookassa import Configuration
 
 from app.core.abs.unit_of_work import IUnitOfWorkWallet, IUnitOfWorkPayment
 from app.core.config import settings, logger
+from app.handlers.auth.interfaces import AsyncAuthService
 from app.handlers.pay.crud import PaymentRepository
 from app.handlers.pay.interfaces import AsyncPaymentService, AsyncWalletService, AsyncApiPaymentService
 from app.handlers.pay.schemas import CreatePaymentsService, UpdatePayments, CreatePaymentsOut, PaymentsOut, \
@@ -30,11 +31,13 @@ from app.method.decorator import transactional
 
 class SqlAlchemyServicePayment(AsyncPaymentService):
     def __init__(self, uow: IUnitOfWorkPayment, session_service: AsyncSessionService,
-                 payment_service_api: AsyncApiPaymentService, wallet_service: AsyncWalletService):
+                 payment_service_api: AsyncApiPaymentService, wallet_service: AsyncWalletService,
+                 user_service: AsyncAuthService):
         self.uow = uow
         self.session_service = session_service
         self.wallet_service = wallet_service
         self.payment_service_api = payment_service_api
+        self.user_service = user_service
 
     @transactional()
     async def create_payments_single(self, create_data: CreatePaymentsService,
@@ -45,6 +48,14 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Ошибка целостности данных"
+            )
+
+        user_data = await self.user_service.get_users_internal(session.user_id)
+
+        if not user_data.email:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Нету почты"
             )
 
         result = await self.uow.payment_repo.get_payments_by_user_id_last(create_data.user_id)
@@ -65,10 +76,11 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
             capture=create_data.capture,
             metadata_payments={"type_payment": "single"},
             idempotency_key=idempotence_key,
-        )
+            )
         )
 
         api_payment = await self.payment_service_api.create_payment(
+            email=user_data.email,
             amount=create_data.amount,
             return_url=create_data.return_url,
             description=create_data.description,
@@ -76,6 +88,16 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
             payment_id=result.id,
             idemp=idempotence_key,
         )
+
+        if api_payment.get("type") == "error":
+            await self.uow.payment_repo.update_payments(UpdatePayments(
+                id=result.id,
+                status="failed",
+            ))
+            raise HTTPException(
+                status_code=502,
+                detail=api_payment.get("description")
+            )
 
         confirmation = api_payment.get("confirmation") or {}
         confirmation_url = confirmation.get("confirmation_url")
@@ -110,6 +132,14 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
                 detail="Ошибка целостности данных"
             )
 
+        user_data = await self.user_service.get_users_internal(session.user_id)
+
+        if not user_data.email:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Нету почты"
+            )
+
         result = await self.uow.payment_repo.get_payments_by_user_id_last(create_data.user_id)
         if result is not None:
             if (result.status == "pending" or result.status == "waiting_for_capture") and (
@@ -132,6 +162,7 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
         )
 
         api_payment = await self.payment_service_api.create_payment(
+            email=user_data.email,
             amount=create_data.amount,
             return_url=create_data.return_url,
             description=create_data.description,
@@ -139,6 +170,16 @@ class SqlAlchemyServicePayment(AsyncPaymentService):
             payment_id=result.id,
             idemp=idempotence_key,
         )
+
+        if api_payment.get("type") == "error":
+            await self.uow.payment_repo.update_payments(UpdatePayments(
+                id=result.id,
+                status="failed",
+            ))
+            raise HTTPException(
+                status_code=502,
+                detail=api_payment.get("description")
+            )
 
         confirmation = api_payment.get("confirmation") or {}
         confirmation_url = confirmation.get("confirmation_url")
@@ -703,6 +744,7 @@ class SqlAlchemyServicePaymentApi:
 
     async def create_payment(
             self,
+            email: str,
             amount: Any,
             return_url: str,
             description: str,
@@ -749,6 +791,27 @@ class SqlAlchemyServicePaymentApi:
         if idemp:
             # сохраняем в metadata как резервную стратегию (чтобы потом можно было искать по idemp)
             paydata["metadata"]["idempotence_key"] = idemp
+
+        # >>> ДОБАВЛЯЕМ ЧЕК
+        paydata["receipt"] = {
+            "customer": {
+                "email": f"{email}"
+            },
+            "items": [
+                {
+                    "description": description,
+                    "quantity": "1.00",
+                    "amount": {
+                        "value": paydata["amount"]["value"],
+                        "currency": "RUB"
+                    },
+                    "vat_code": 2,
+                    "payment_subject": "service",
+                    "payment_mode": "full_payment"
+                }
+            ]
+        }
+
 
         try:
             # Первый вариант — попробовать передать idempotence_key как аргумент (некоторые версии SDK поддерживают это)
