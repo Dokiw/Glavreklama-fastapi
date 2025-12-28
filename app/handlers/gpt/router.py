@@ -1,7 +1,7 @@
-import datetime
-from typing import Optional, List
 
-from fastapi import APIRouter, HTTPException, Depends, Header, Request, Body, Form
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Depends,  Request
 
 
 from app.handlers.gpt.dependencies import gptServiceDep

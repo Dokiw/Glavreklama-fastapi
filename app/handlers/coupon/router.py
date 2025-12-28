@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional, List
 
-from fastapi import APIRouter, HTTPException, Depends, Header, Request, Body, Form
+from fastapi import APIRouter, HTTPException, Depends,  Request
 
 from app.handlers.coupon.dependencies import couponServiceDep
 from app.handlers.coupon.schemas import OutCoupon, CreateCouponService

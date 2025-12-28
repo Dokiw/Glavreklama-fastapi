@@ -4,6 +4,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
+from app.handlers.auth.dependencies import AuthServiceDep
 from app.handlers.pay.interfaces import AsyncWalletService, AsyncPaymentService, AsyncApiPaymentService
 from app.handlers.pay.service import SqlAlchemyServiceWallet, SqlAlchemyServicePayment, SqlAlchemyServicePaymentApi
 
@@ -41,10 +42,11 @@ async def get_uow_payment(db: AsyncSession = Depends(get_db)) -> IUnitOfWorkPaym
 def get_session_service_payment(
         session_service: SessionServiceDep,
         wallet_service: walletServiceDep,
+        user_service: AuthServiceDep,
         payment_service_api: SqlAlchemyServicePaymentApi = Depends(),
         uow: IUnitOfWorkPayment = Depends(get_uow_payment)
 ) -> AsyncPaymentService:
-    return SqlAlchemyServicePayment(session_service=session_service, uow=uow, wallet_service=wallet_service,
+    return SqlAlchemyServicePayment(user_service=user_service, session_service=session_service, uow=uow, wallet_service=wallet_service,
                                     payment_service_api=payment_service_api)
 
 

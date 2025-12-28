@@ -56,6 +56,7 @@ class CreatePaymentsService(BaseModel):
     description: Optional[str] = Field(None, alias="Description")
     currency: str = Field(..., alias="Currency")
     capture: bool = Field(..., alias="Capture")
+    email: Optional[EmailStr] = Field(None)
     metadata_payments: Optional[dict] = Field(None, alias="MetadataPayments")
 
     class Config:

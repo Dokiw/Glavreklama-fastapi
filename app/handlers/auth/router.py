@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Body, Form
 
 from app.handlers.auth.dependencies import AuthServiceDep
 from app.handlers.auth.schemas import LogInUser, UserCreate, AuthResponse, RoleUser, AuthResponseProvide, PaginateUser, \
-    LogInUserBot, UserUpdate, OutUser
+    LogInUserBot, UserUpdate
 from app.handlers.providers.schemas import ProviderLoginRequest
 from app.handlers.session.dependencies import SessionServiceDep
 from app.handlers.session.schemas import CheckSessionAccessToken

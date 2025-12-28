@@ -4,6 +4,7 @@ from fastapi.openapi.models import APIKey
 
 bearer_scheme = HTTPBearer(auto_error=False)  # auto_error=False чтобы можно было вручную бросать 401
 
+
 async def get_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> str:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(

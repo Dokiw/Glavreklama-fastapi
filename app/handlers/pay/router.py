@@ -1,4 +1,4 @@
-import logging
+
 from datetime import datetime
 from decimal import Decimal
 from typing import Dict, Any
@@ -7,6 +7,7 @@ from typing import Optional, List
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Request, Depends, Body
+from pydantic import EmailStr
 
 from app.handlers.auth.dependencies import AuthServiceDep
 from app.handlers.auth.schemas import LogInUserBot
@@ -52,12 +53,14 @@ async def create_payment(
         capture: Optional[bool] = True,
         metadata_payments: Optional[Dict[str, Any]] = None,
         request: Request = None,
+        email: Optional[EmailStr] = None,
         access_token: str = Depends(get_token),
 ):
     """
     Создание платежа, принимает id пользователя, id кошелька, сумму и return_url, собирает ip и user-agent,
     формирует данные проверки сессии, передаёт их вместе с параметрами платежа в сервис
     и возвращает результат операции
+    :param email:
     :param user_id:
     :param wallet_id:
     :param amount:
@@ -91,6 +94,7 @@ async def create_payment(
         description=description,
         currency=currency,
         capture=capture,
+        email=email,
         metadata_payments=metadata_payments,
     )
 
@@ -109,6 +113,7 @@ async def create_payment_single(
         currency: Optional[str] = "RUB",
         capture: Optional[bool] = True,
         metadata_payments: Optional[Dict[str, Any]] = None,
+        email: Optional[EmailStr] = None,
         request: Request = None,
         access_token: str = Depends(get_token),
 ):
@@ -116,6 +121,7 @@ async def create_payment_single(
     Создание одиночного платежа, принимает payment_service, id пользователя, id кошелька, сумму, return_url,
     confirmation_type, description, currency, capture, metadata_payments, собирает ip и user-agent,
     формирует данные проверки сессии и данные платежа, передаёт их в сервис и возвращает результат операции
+    :param email:
     :param payment_service:
     :param user_id:
     :param wallet_id:
@@ -149,6 +155,7 @@ async def create_payment_single(
         description=description,
         currency=currency,
         capture=capture,
+        email=email,
         metadata_payments=metadata_payments,
     )
 

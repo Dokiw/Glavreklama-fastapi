@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends, Header, Request
+from fastapi import APIRouter, HTTPException, Depends, Header, Request, Body
 from app.handlers.auth.schemas import LogInUser, UserCreate, LogOutUser, AuthResponse,RoleUser
 from app.handlers.session.dependencies import SessionServiceDep, OauthClientServiceDep
 from app.handlers.session.schemas import OpenSession, CloseSession, OutSession, CheckSessionAccessToken, \
     CheckSessionRefreshToken, OutOauthClient, CheckOauthClient
+from app.method.get_token import get_token
 
 router = APIRouter(prefix="/session", tags=["session"])
 
@@ -25,9 +26,13 @@ async def hub():
 
 
 # todo - заготовка под новый сервер и получение информации.
-# @router.post("/refresh_token",response_model=OutOauthClient)
-# async def valid_server(session_service: SessionServiceDep, oauth_client: str, oauth_client_secret: str):
-#     return None
+@router.post("/access_token", response_model=OutSession)
+async def valid_server_session(
+        session_service: SessionServiceDep,
+        csat: CheckSessionAccessToken = Body(...),
+):
+
+    return await session_service.validate_access_token_session(csat)
 
 
 @router.post("/refresh_token",response_model=OutSession)
