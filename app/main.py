@@ -28,7 +28,10 @@ async def lifespan(app: FastAPI):
     # можно добавить, например, закрытие соединений с БД
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    root_path="/v1/main"
+)
 
 origins = [
     "http://localhost",
@@ -39,6 +42,8 @@ origins = [
     "https://glavprojects.ru",
     "https://catcheggsapp.web.app",
     "https://admin.glavprojects.ru",
+    "http://185.133.42.31",
+    "*"
 ]
 
 # Подключаем CORS

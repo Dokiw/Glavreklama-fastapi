@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Header, Request, Body
+
+from app.handlers.auth.dependencies import AuthServiceDep
 from app.handlers.auth.schemas import LogInUser, UserCreate, LogOutUser, AuthResponse,RoleUser
 from app.handlers.session.dependencies import SessionServiceDep, OauthClientServiceDep
 from app.handlers.session.schemas import OpenSession, CloseSession, OutSession, CheckSessionAccessToken, \
@@ -29,9 +31,12 @@ async def hub():
 @router.post("/access_token", response_model=OutSession)
 async def valid_server_session(
         session_service: SessionServiceDep,
+        auth_service: AuthServiceDep,
+        admin_method: bool,
         csat: CheckSessionAccessToken = Body(...),
 ):
-
+    if admin_method:
+        await auth_service.role_service.is_admin(csat.user_id)
     return await session_service.validate_access_token_session(csat)
 
 

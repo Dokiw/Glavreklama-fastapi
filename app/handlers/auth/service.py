@@ -40,6 +40,24 @@ class SqlAlchemyAuth(AsyncAuthService):
         self.oauth_client_service = oauth_client_service
 
     @transactional()
+    async def delete_users(self, user_id: int, check_data: CheckSessionAccessToken) -> Optional[OutUser]:
+
+        # проверяем состояния - доступ ток админ
+        r_u = await self.role_service.is_admin(user_id)
+        if not r_u:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Нет прав"
+            )
+
+        # Проверяем состояния сессии
+        await self.session_service.validate_access_token_session(check_data)
+
+        result = await self.uow.user_repo.delete_users(user_id)
+
+        return result
+
+    @transactional()
     async def get_users_internal(self, id_user: int) -> Optional[OutUser]:
         return await self.uow.user_repo.get_by_id(id_user)
 

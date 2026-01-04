@@ -6,7 +6,7 @@ from app.handlers.auth.schemas import (
     LogInUser,
     AuthResponse, AuthResponseProvide, UserCreateProvide
 )
-from app.handlers.coupon.schemas import CreateCoupon, OutCoupon, CreateCouponService
+from app.handlers.coupon.schemas import CreateCoupon, OutCoupon, CreateCouponService, PaginateOutCoupon
 from app.handlers.session.schemas import CheckSessionAccessToken
 
 
@@ -25,6 +25,12 @@ class AsyncCouponRepository(Protocol):
         ...
 
     async def used_coupon(self, user_id: int, token: str) -> Optional[OutCoupon]:
+        ...
+
+    async def count_coupon(self) -> int:
+        ...
+
+    async def get_coupon_paginate(self, limit: int, offset: int) -> List[OutCoupon]:
         ...
 
 
@@ -51,3 +57,13 @@ class AsyncCouponService(Protocol):
 
     async def get_by_any_user_id(self,id_user:int, check_data: CheckSessionAccessToken) -> Optional[List[OutCoupon]]:
         ...
+
+    async def get_coupon_paginate(
+        self,
+        limit: int,
+        offset: int,
+        admin_method: bool,
+        check_data: CheckSessionAccessToken,
+    ) -> PaginateOutCoupon:
+        ...
+

@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Body, Form
 
 from app.handlers.auth.dependencies import AuthServiceDep
 from app.handlers.auth.schemas import LogInUser, UserCreate, AuthResponse, RoleUser, AuthResponseProvide, PaginateUser, \
-    LogInUserBot, UserUpdate
+    LogInUserBot, UserUpdate, OutUser
 from app.handlers.providers.schemas import ProviderLoginRequest
 from app.handlers.session.dependencies import SessionServiceDep
 from app.handlers.session.schemas import CheckSessionAccessToken
@@ -203,6 +203,8 @@ async def get_users(
                                         user_agent=user_agent, access_token=access_token)
 
 
+
+
 @router.post("/get_roles", response_model=List[Optional[RoleUser]])
 async def get_roles(
         auth_service: AuthServiceDep,
@@ -288,3 +290,29 @@ async def update_user_email(
     )
     await session_service.validate_access_token_session(csat)
     return await send_confirmation_email_for_change(user_id=str(user_data.user_id) ,new_email=user_data.email)
+
+
+@router.delete("/{user_id}",response_model=Optional[OutUser])
+async def delete_users(
+        auth_service: AuthServiceDep,
+        session_service: SessionServiceDep,
+        user_id: int,
+        request: Request,
+        access_token: str = Depends(get_token),
+):
+    """
+    Удаляет пользователя,
+    собирает ip и user-agent клиента, формирует данные проверки сессии,
+    передаёт их в сервис обновления роли и возвращает ответ
+    """
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "")
+
+    csat = CheckSessionAccessToken(
+        user_id=user_id,
+        ip_address=ip,
+        user_agent=user_agent,
+        access_token=access_token,
+    )
+    await session_service.validate_access_token_session(csat)
+    return await auth_service.delete_users(user_id)

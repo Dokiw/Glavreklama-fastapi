@@ -6,12 +6,13 @@ from datetime import datetime, timedelta, UTC
 from app.handlers.auth.interfaces import AsyncRoleService
 from app.handlers.coupon.interfaces import AsyncCouponService
 from app.handlers.coupon.UOW import SqlAlchemyUnitOfWork
-from app.handlers.coupon.schemas import CreateCoupon, OutCoupon, CreateCouponService
+from app.handlers.coupon.schemas import CreateCoupon, OutCoupon, CreateCouponService, PaginateOutCoupon
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from app.core.abs.unit_of_work import IUnitOfWorkWallet, IUnitOfWorkCoupon
 from app.handlers.session.dependencies import SessionServiceDep
 from app.handlers.session.schemas import CheckSessionAccessToken
+from app.method.decorator import transactional
 from app.method.generator_promo import PromoGenerator
 
 
@@ -182,3 +183,24 @@ class SqlAlchemyCoupon(AsyncCouponService):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Внутренняя ошибка сервера: {str(e)}"
             )
+
+    @transactional()
+    async def get_coupon_paginate(self, limit: int, offset: int, admin_method: bool,
+        check_data: CheckSessionAccessToken) -> PaginateOutCoupon:
+
+        await self.session_service.validate_access_token_session(check_data)
+
+        await self.role_service.is_admin(check_data.user_id)
+
+        result = await self.uow.coupon_repo.get_coupon_paginate(limit, offset)
+        count = await self.uow.coupon_repo.count_coupon()
+
+        result = PaginateOutCoupon(
+            data=result,
+            count=count,
+            limit=limit,
+            offset=offset,
+        )
+
+        return result
+

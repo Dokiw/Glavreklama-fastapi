@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from sqlalchemy import (
     BigInteger,
@@ -10,6 +10,7 @@ from sqlalchemy import (
     func,
     text, UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 
@@ -44,6 +45,7 @@ class UserProviders(Base):
 
     # auth metadata
     auth_date: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+
 
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())

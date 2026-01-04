@@ -26,7 +26,6 @@ class AsyncRoleRepository(Protocol):
         ...
 
 
-
 # для работы с пользователем
 class AsyncUserRepository(Protocol):
     """Абстракция репозитория для работы с пользователями (асинхронная)."""
@@ -58,10 +57,16 @@ class AsyncUserRepository(Protocol):
     async def update_role_users(self, user_id: int, role_id: int) -> OutUser:
         ...
 
+    async def delete_users(self, user_id: int) -> Optional[OutUser]:
+        ...
+
 
 # для аунтификации и авторизации
 class AsyncAuthService(Protocol):
     """Сервис авторизации/аутентификации."""
+
+    async def delete_users(self, user_id: int, check_data: CheckSessionAccessToken) -> Optional[OutUser]:
+        ...
 
     async def login_via_bots(self, login_data: LogInUserBot, ip: str,
                              user_agent: str) -> AuthResponse:

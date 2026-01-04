@@ -2,7 +2,7 @@ from app.handlers.auth.dto import UserAuthData
 from app.handlers.auth.schemas import OutUser, UserCreate, RoleUser, UserCreateProvide, UserUpdate
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.handlers.auth.interfaces import AsyncUserRepository, AsyncRoleRepository
-from sqlalchemy import select, func, update
+from sqlalchemy import select, func, update, Delete
 from app.models.auth.models import User as UserModel, Role as RoleModel
 
 from typing import TYPE_CHECKING, Optional, List
@@ -29,6 +29,17 @@ class UserRepository(AsyncUserRepository):
             last_name=m.last_name,
             role_id=m.role_id,
         )
+
+    async def delete_users(self, user_id: int) -> Optional[OutUser]:
+        obj = await self.db.get(UserModel, user_id)
+        if obj is None:
+            return None
+
+        dto = await self._to_dto(obj)
+
+        await self.db.delete(obj)
+
+        return dto
 
     async def update_user(self, user_data: UserUpdate) -> Optional[OutUser]:
         # Собираем только те поля, которые реально пришли (не None)

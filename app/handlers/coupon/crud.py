@@ -12,7 +12,7 @@ from app.handlers.coupon.interfaces import AsyncCouponService, AsyncCouponReposi
 from app.main import logger
 from app.models import CouponUser
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 
 
 class CouponRepository(AsyncCouponRepository):
@@ -94,3 +94,21 @@ class CouponRepository(AsyncCouponRepository):
         result = result.scalar_one_or_none()
 
         return await self._to_dto(result) if result else None
+
+    async def count_coupon(self) -> int:
+        count_q = select(func.count(CouponUser.id))
+        count_result = await self.db.execute(count_q)
+        total = count_result.scalar_one()
+        return total
+
+    async def get_coupon_paginate(self, limit: int, offset: int) -> List[OutCoupon]:
+        stmt = (
+            select(CouponUser)
+            .order_by(CouponUser.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+
+        result = await self.db.execute(stmt)
+        result = result.scalars().all()
+        return [await self._to_dto(res) for res in result]

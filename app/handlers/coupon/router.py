@@ -1,23 +1,36 @@
 import datetime
 from typing import Optional, List
 
-from fastapi import APIRouter, HTTPException, Depends,  Request
+from fastapi import APIRouter, HTTPException, Depends, Request
 
 from app.handlers.coupon.dependencies import couponServiceDep
-from app.handlers.coupon.schemas import OutCoupon, CreateCouponService
+from app.handlers.coupon.schemas import OutCoupon, CreateCouponService, PaginateOutCoupon
 from app.handlers.session.schemas import CheckSessionAccessToken
 from app.method.get_token import get_token
 
 router = APIRouter(prefix="/coupon", tags=["coupon"])
 
 
-@router.get("/")
-async def hub():
-    """
-    Используется для возврата 200-го статуса на главной странице FastApi()
-    :return:
-    """
-    return HTTPException(200, 'Status - True')
+@router.get("/", response_model=PaginateOutCoupon)
+async def get_coupon_paginate(
+        limit: int,
+        offset: int,
+        user_id: int,
+        request: Request,
+        coupon_service: couponServiceDep,
+        access_token: str = Depends(get_token),
+) -> PaginateOutCoupon:
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "")
+
+    csat = CheckSessionAccessToken(
+        user_id=user_id,
+        ip_address=ip,
+        user_agent=user_agent,
+        access_token=access_token
+    )
+
+    return await coupon_service.get_coupon_paginate(limit=limit, offset=offset, admin_method=True, check_data=csat)
 
 
 @router.post("/create_coupon", response_model=Optional[OutCoupon] | datetime.datetime)
@@ -90,6 +103,7 @@ async def used_coupon(
     )
 
     return await coupon_service.used_coupon(token=token, check_data=csat)
+
 
 @router.post("/used_any_coupon", response_model=Optional[OutCoupon])
 async def used_any_coupon(

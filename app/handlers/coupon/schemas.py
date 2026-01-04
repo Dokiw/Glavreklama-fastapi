@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 
@@ -39,3 +39,10 @@ class OutCoupon(BaseModel):
 
     class Config:
         populate_by_name = True  # чтобы можно было и по алиасам, и по имени
+
+
+class PaginateOutCoupon(BaseModel):
+    data: List[OutCoupon] = Field(...)
+    count: int = Field(...)
+    limit: int = Field(...)
+    offset: int = Field(...)
